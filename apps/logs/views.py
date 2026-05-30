@@ -75,6 +75,7 @@ class LogListView(LoginRequiredMixin, ListView):
             "date_to": self.request.GET.get("date_to", ""),
         }
         context["page_title"] = "Logs — LogMonitor"
+        context["page_heading"] = "Explorateur de Logs"
         return context
 
     def render_to_response(self, context, **response_kwargs):

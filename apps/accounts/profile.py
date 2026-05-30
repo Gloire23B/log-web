@@ -100,6 +100,7 @@ class ProfileView(LoginRequiredMixin, UpdateView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx["page_title"] = "Profil — LogMonitor"
+        ctx["page_heading"] = "Paramètres du profil"
         ctx["password_form"] = PasswordChangeForm(user=self.request.user)
         return ctx
 

@@ -7,9 +7,6 @@
 {% block content %}
 <div class="space-y-6 animate-fade-in">
 
-  {# ════════════════════════════════════════════════════════════════════════
-     Section 1 — KPI Cards (4 métriques principales)
-  ════════════════════════════════════════════════════════════════════════ #}
   <div class="grid grid-cols-2 xl:grid-cols-4 gap-4">
 
     {# ── Total Logs (24h) ─────────────────────────────────────────────── #}
@@ -89,9 +86,6 @@
     </div>
   </div>
 
-  {# ════════════════════════════════════════════════════════════════════════
-     Section 2 — Graphique de volume + Top sources
-  ════════════════════════════════════════════════════════════════════════ #}
   <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
 
     {# ── Graphique de volume (2/3) ─────────────────────────────────────── #}
@@ -103,8 +97,6 @@
         </div>
         {# Sélecteur de période — HTMX ─────────────────────────────────── #}
         <div class="flex items-center gap-1 bg-[#0D1117] rounded-lg p-1 border border-[#30363D]">
-          {% for period, label in period_choices|default:"1h,1H|6h,6H|24h,24H|7d,7J" %}
-          {% endfor %}
           <button onclick="updateChart('1h')"   data-period="1h"  class="period-btn px-2.5 py-1 text-[11px] rounded-md text-[#8B949E] hover:text-[#E6EDF3] transition-colors">1H</button>
           <button onclick="updateChart('6h')"   data-period="6h"  class="period-btn px-2.5 py-1 text-[11px] rounded-md text-[#8B949E] hover:text-[#E6EDF3] transition-colors">6H</button>
           <button onclick="updateChart('24h')"  data-period="24h" class="period-btn px-2.5 py-1 text-[11px] rounded-md bg-[#21262D] text-[#E6EDF3] transition-colors" id="btn-24h">24H</button>
@@ -156,9 +148,6 @@
     </div>
   </div>
 
-  {# ════════════════════════════════════════════════════════════════════════
-     Section 3 — Tableau des logs récents
-  ════════════════════════════════════════════════════════════════════════ #}
   <div class="bg-[#161B22] border border-[#30363D] rounded-xl overflow-hidden">
 
     {# En-tête du tableau avec filtres ────────────────────────────────── #}

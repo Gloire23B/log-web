@@ -65,6 +65,7 @@ class AlertListView(LoginRequiredMixin, ListView):
 
         context.update({
             "page_title": "Alertes — LogMonitor",
+            "page_heading": "Alertes",
             "severity_choices": Alert.Severity.choices,
             "status_choices": Alert.Status.choices,
             "filters": {

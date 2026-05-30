@@ -1,17 +1,9 @@
-{# ──────────────────────────────────────────────────────────────────────────
-   components/header.html
-   Header de la zone principale.
-   - Breadcrumb / titre de page
-   - Barre de recherche globale (HTMX)
-   - Indicateur de rafraîchissement
-   - Notifications
-────────────────────────────────────────────────────────────────────────── #}
 <header class="flex-shrink-0 h-14 flex items-center gap-4 px-6 bg-[#161B22] border-b border-[#30363D]">
 
   {# ── Titre de la page ─────────────────────────────────────────────────── #}
   <div class="flex-1 min-w-0">
     <h1 class="text-sm font-semibold text-[#E6EDF3] truncate">
-      {% block page_heading %}Dashboard{% endblock %}
+      {{ page_heading|default:"Dashboard" }}
     </h1>
     <p class="text-[11px] text-[#484F58] font-mono mt-0.5">
       {% now "l d F Y — H:i" %}

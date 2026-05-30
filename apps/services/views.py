@@ -27,6 +27,7 @@ class ServiceListView(LoginRequiredMixin, ListView):
             by_type.setdefault(t, []).append(svc)
         context.update({
             "page_title": "Services — LogMonitor",
+            "page_heading": "Services",
             "status_counts": status_counts,
             "services_by_type": by_type,
             "total": len(services),

@@ -33,13 +33,17 @@ class Command(BaseCommand):
         from apps.alerts.models import Alert
 
         if options["clear"]:
-            self.stdout.write("🗑️  Suppression des données existantes…")
+            self.stdout.write("[DEL] Suppression des donnees existantes...")
+            from apps.servers.models import Server
+            from apps.services.models import Service
             LogEntry.objects.all().delete()
-            LogSource.objects.all().delete()
+            Server.objects.all().delete()
+            Service.objects.all().delete()
             Alert.objects.all().delete()
+            LogSource.objects.all().delete()
 
         # ── Création des sources ──────────────────────────────────────────
-        self.stdout.write("📡 Création des sources…")
+        self.stdout.write("[SRC] Creation des sources...")
         sources_data = [
             ("api-gateway", LogSource.SourceType.SERVICE, "10.0.0.1"),
             ("auth-service", LogSource.SourceType.SERVICE, "10.0.0.2"),
@@ -62,7 +66,7 @@ class Command(BaseCommand):
 
         # ── Génération des logs ───────────────────────────────────────────
         log_count = options["logs"]
-        self.stdout.write(f"📝 Génération de {log_count} logs…")
+        self.stdout.write(f"[LOG] Generation de {log_count} logs...")
 
         messages = {
             LogEntry.Level.DEBUG: [
@@ -163,7 +167,7 @@ class Command(BaseCommand):
                 last_name="LogMonitor",
                 role=User.Role.ADMIN,
             )
-            self.stdout.write(self.style.SUCCESS("👤 Superuser créé : admin / password123"))
+            self.stdout.write(self.style.SUCCESS("[OK] Superuser cree : admin / password123"))
 
         # ── Alertes de démo ──────────────────────────────────────────────
         if Alert.objects.count() == 0:
@@ -185,23 +189,23 @@ class Command(BaseCommand):
         # ── Serveurs de démo ─────────────────────────────────────────
         from apps.servers.models import Server
         if Server.objects.count() == 0:
-            self.stdout.write("🖥️  Création des serveurs…")
+            self.stdout.write("[SRV] Creation des serveurs...")
             servers_demo = [
                 ("prod-web-01", "web-01.prod.internal", "10.0.2.1",
-                 Server.Environment.PRODUCTION, 72.3, 68.1, 41.2, Server.Status.ONLINE),
+                 Server.Environment.PRODUCTION, 72.3, 68.1, 41.2, Server.Status.ONLINE, "web-server-01"),
                 ("prod-web-02", "web-02.prod.internal", "10.0.2.2",
-                 Server.Environment.PRODUCTION, 81.5, 74.0, 43.8, Server.Status.WARNING),
+                 Server.Environment.PRODUCTION, 81.5, 74.0, 43.8, Server.Status.WARNING, "web-server-02"),
                 ("prod-db-primary", "db-01.prod.internal", "10.0.1.1",
-                 Server.Environment.PRODUCTION, 45.2, 82.3, 91.7, Server.Status.CRITICAL),
+                 Server.Environment.PRODUCTION, 45.2, 82.3, 91.7, Server.Status.CRITICAL, "prod-db-primary"),
                 ("prod-db-replica", "db-02.prod.internal", "10.0.1.2",
-                 Server.Environment.PRODUCTION, 38.1, 71.5, 44.1, Server.Status.ONLINE),
+                 Server.Environment.PRODUCTION, 38.1, 71.5, 44.1, Server.Status.ONLINE, "prod-db-replica"),
                 ("staging-app-01", "app-01.staging", "10.1.2.1",
-                 Server.Environment.STAGING, 22.4, 55.6, 30.2, Server.Status.ONLINE),
+                 Server.Environment.STAGING, 22.4, 55.6, 30.2, Server.Status.ONLINE, None),
                 ("dev-server-01", "dev-01.local", "10.2.0.1",
-                 Server.Environment.DEVELOPMENT, 15.8, 40.2, 25.0, Server.Status.ONLINE),
+                 Server.Environment.DEVELOPMENT, 15.8, 40.2, 25.0, Server.Status.ONLINE, None),
             ]
-            for name, hostname, ip, env, cpu, mem, disk, status in servers_demo:
-                src = next((s for s in sources if name.split("-")[1] in s.name or name in s.name), None)
+            for name, hostname, ip, env, cpu, mem, disk, status, src_name in servers_demo:
+                src = next((s for s in sources if s.name == src_name), None) if src_name else None
                 Server.objects.create(
                     name=name, hostname=hostname, ip_address=ip,
                     environment=env, status=status,
@@ -214,7 +218,7 @@ class Command(BaseCommand):
         # ── Services de démo ─────────────────────────────────────────
         from apps.services.models import Service
         if Service.objects.count() == 0:
-            self.stdout.write("⚙️  Création des services…")
+            self.stdout.write("[SVC] Creation des services...")
             services_demo = [
                 ("api-gateway",   "API Gateway",       Service.ServiceType.API,
                  Service.Status.OPERATIONAL,  "v3.2.1", 142.5, 0.12, 1250.0, 99.98),
@@ -244,11 +248,11 @@ class Command(BaseCommand):
                 )
 
         self.stdout.write(self.style.SUCCESS(
-            f"\n✅ Données générées avec succès :\n"
-            f"   • {len(sources)} sources\n"
-            f"   • {log_count} logs\n"
-            f"   • {Server.objects.count()} serveurs\n"
-            f"   • {Service.objects.count()} services\n"
-            f"   • {Alert.objects.count()} alertes\n"
-            f"\n🚀 Connectez-vous avec : admin / password123"
+            f"\n[OK] Donnees generees avec succes :\n"
+            f"   - {len(sources)} sources\n"
+            f"   - {log_count} logs\n"
+            f"   - {Server.objects.count()} serveurs\n"
+            f"   - {Service.objects.count()} services\n"
+            f"   - {Alert.objects.count()} alertes\n"
+            f"\n[GO] Connectez-vous avec : admin / password123"
         ))

@@ -44,6 +44,7 @@ class ServerListView(LoginRequiredMixin, ListView):
 
         context.update({
             "page_title": "Serveurs — LogMonitor",
+            "page_heading": "Serveurs",
             "status_counts": status_counts,
             "servers_by_env": by_env,
             "total": len(servers),

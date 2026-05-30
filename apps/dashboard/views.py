@@ -97,6 +97,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
 
         context.update({
             "page_title": "Dashboard — LogMonitor",
+            "page_heading": "Dashboard",
             # KPIs
             "total_24h": total_24h,
             "total_prev": total_prev,

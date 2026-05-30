@@ -1,1 +1,117 @@
-PLACEHOLDER
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Alertes — LogMonitor{% endblock %}
+{% block page_heading %}Alertes{% endblock %}
+
+{% block content %}
+<div class="space-y-4 animate-fade-in">
+
+  {# ── Barre de statut ──────────────────────────────────────────────── #}
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+    <div class="bg-[#161B22] border border-[#30363D] rounded-xl px-4 py-3 text-center">
+      <p class="text-xl font-bold font-mono text-[#E6EDF3]">{{ total_active }}</p>
+      <p class="text-[11px] text-[#8B949E]">Alertes actives</p>
+    </div>
+    <div class="bg-[#161B22] border border-red-900/40 rounded-xl px-4 py-3 text-center">
+      <p class="text-xl font-bold font-mono text-red-400">{{ severity_counts.critical|default:0 }}</p>
+      <p class="text-[11px] text-[#8B949E]">Critique{{ severity_counts.critical|pluralize }}</p>
+    </div>
+    <div class="bg-[#161B22] border border-orange-900/40 rounded-xl px-4 py-3 text-center">
+      <p class="text-xl font-bold font-mono text-orange-400">{{ severity_counts.high|default:0 }}</p>
+      <p class="text-[11px] text-[#8B949E]">Haute{{ severity_counts.high|pluralize }}</p>
+    </div>
+    <div class="bg-[#161B22] border border-amber-900/40 rounded-xl px-4 py-3 text-center">
+      <p class="text-xl font-bold font-mono text-amber-400">{{ severity_counts.medium|default:0 }}</p>
+      <p class="text-[11px] text-[#8B949E]">Moyenne{{ severity_counts.medium|pluralize }}</p>
+    </div>
+  </div>
+
+  {# ── Filtres ──────────────────────────────────────────────────────── #}
+  <div class="bg-[#161B22] border border-[#30363D] rounded-xl p-4">
+    <form method="get" class="flex flex-wrap items-end gap-3">
+
+      <div class="flex-1 min-w-[180px]">
+        <label class="block text-[11px] font-medium text-[#484F58] mb-1.5 uppercase tracking-wider">Recherche</label>
+        <input type="text" name="search" value="{{ filters.search }}"
+               placeholder="Titre, description, source…"
+               class="w-full bg-[#0D1117] border border-[#30363D] rounded-lg px-3 py-2
+                      text-[#E6EDF3] text-sm placeholder-[#484F58]
+                      focus:outline-none focus:border-[#388BFD] focus:ring-1 focus:ring-[#388BFD]
+                      transition-colors duration-200">
+      </div>
+
+      <div class="w-36">
+        <label class="block text-[11px] font-medium text-[#484F58] mb-1.5 uppercase tracking-wider">Sévérité</label>
+        <select name="severity"
+                class="w-full bg-[#0D1117] border border-[#30363D] rounded-lg px-3 py-2
+                       text-[#E6EDF3] text-sm focus:outline-none focus:border-[#388BFD]
+                       focus:ring-1 focus:ring-[#388BFD] transition-colors">
+          <option value="">Toutes</option>
+          {% for value, label in severity_choices %}
+            <option value="{{ value }}" {% if filters.severity == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="w-36">
+        <label class="block text-[11px] font-medium text-[#484F58] mb-1.5 uppercase tracking-wider">Statut</label>
+        <select name="status"
+                class="w-full bg-[#0D1117] border border-[#30363D] rounded-lg px-3 py-2
+                       text-[#E6EDF3] text-sm focus:outline-none focus:border-[#388BFD]
+                       focus:ring-1 focus:ring-[#388BFD] transition-colors">
+          <option value="">Tous</option>
+          {% for value, label in status_choices %}
+            <option value="{{ value }}" {% if filters.status == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <button type="submit"
+              class="px-4 py-2 text-xs bg-[#388BFD] text-white rounded-lg hover:bg-[#1F6FEB] transition-colors">
+        Filtrer
+      </button>
+      <a href="{% url 'alerts:list' %}"
+         class="px-4 py-2 text-xs text-[#8B949E] border border-[#30363D] rounded-lg hover:text-[#E6EDF3] hover:border-[#484F58] transition-colors">
+        Reset
+      </a>
+    </form>
+  </div>
+
+  {# ── Liste des alertes ─────────────────────────────────────────────── #}
+  <div class="bg-[#161B22] border border-[#30363D] rounded-xl overflow-hidden" id="alert-list">
+    {% include "partials/alert_rows.html" %}
+  </div>
+
+  {# ── Pagination ─────────────────────────────────────────────────────── #}
+  {% if is_paginated %}
+  <div class="flex items-center justify-between px-2 py-3">
+    <span class="text-xs text-[#484F58] font-mono">
+      {{ page_obj.start_index }}–{{ page_obj.end_index }} / {{ paginator.count|intcomma }}
+    </span>
+    <div class="flex items-center gap-1">
+      {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}{% if filters.status %}&status={{ filters.status }}{% endif %}{% if filters.severity %}&severity={{ filters.severity }}{% endif %}"
+           class="p-1.5 text-[#484F58] hover:text-[#E6EDF3] hover:bg-[#21262D] rounded transition-colors">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+          </svg>
+        </a>
+      {% endif %}
+      <span class="text-xs font-mono text-[#8B949E] px-2">
+        {{ page_obj.number }}/{{ paginator.num_pages }}
+      </span>
+      {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}{% if filters.status %}&status={{ filters.status }}{% endif %}{% if filters.severity %}&severity={{ filters.severity }}{% endif %}"
+           class="p-1.5 text-[#484F58] hover:text-[#E6EDF3] hover:bg-[#21262D] rounded transition-colors">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+          </svg>
+        </a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

@@ -1,9 +1,3 @@
-{# ──────────────────────────────────────────────────────────────────────────
-   partials/alert_row.html
-   Ligne individuelle d'une alerte.
-   Les boutons Acquitter/Résoudre envoient un POST HTMX
-   et remplacent uniquement cette ligne (hx-swap="outerHTML").
-────────────────────────────────────────────────────────────────────────── #}
 <div id="alert-{{ alert.pk }}"
      class="flex items-start gap-4 px-5 py-4 hover:bg-[#0D1117]/40 transition-colors">
 
