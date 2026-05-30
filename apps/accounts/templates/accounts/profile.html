@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block title %}Profil — LogMonitor{% endblock %}
+{% block page_heading %}Paramètres du profil{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl space-y-5 animate-fade-in">
+
+  {# ── Carte infos personnelles ─────────────────────────────────────── #}
+  <div class="bg-[#161B22] border border-[#30363D] rounded-xl overflow-hidden">
+    <div class="px-6 py-4 border-b border-[#30363D]">
+      <h2 class="text-sm font-semibold text-[#E6EDF3]">Informations personnelles</h2>
+      <p class="text-xs text-[#8B949E] mt-0.5">Mettez à jour vos informations de profil</p>
+    </div>
+
+    <form method="post" action="{% url 'accounts:profile' %}" enctype="multipart/form-data" class="px-6 py-5">
+      {% csrf_token %}
+
+      {# Avatar + initiales ─────────────────────────────────────────── #}
+      <div class="flex items-center gap-4 mb-6">
+        <div class="w-14 h-14 rounded-full bg-gradient-to-br from-[#388BFD] to-[#1F6FEB]
+                    flex items-center justify-center flex-shrink-0">
+          <span class="text-xl font-bold text-white font-mono">{{ request.user.initials }}</span>
+        </div>
+        <div>
+          <p class="text-sm font-medium text-[#E6EDF3]">{{ request.user.display_name }}</p>
+          <p class="text-xs text-[#8B949E]">{{ request.user.get_role_display }}</p>
+          <p class="text-[11px] text-[#484F58] font-mono mt-0.5">{{ request.user.email }}</p>
+        </div>
+      </div>
+
+      {# Champs du formulaire ────────────────────────────────────────── #}
+      <div class="grid grid-cols-2 gap-4">
+
+        <div>
+          <label class="block text-xs font-medium text-[#8B949E] mb-1.5">Prénom</label>
+          {{ form.first_name }}
+          {% if form.first_name.errors %}
+            <p class="mt-1 text-xs text-red-400">{{ form.first_name.errors.0 }}</p>
+          {% endif %}
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-[#8B949E] mb-1.5">Nom</label>
+          {{ form.last_name }}
+        </div>
+
+        <div class="col-span-2">
+          <label class="block text-xs font-medium text-[#8B949E] mb-1.5">Adresse email</label>
+          {{ form.email }}
+          {% if form.email.errors %}
+            <p class="mt-1 text-xs text-red-400">{{ form.email.errors.0 }}</p>
+          {% endif %}
+        </div>
+
+        <div class="col-span-2">
+          <label class="block text-xs font-medium text-[#8B949E] mb-1.5">Fuseau horaire</label>
+          {{ form.timezone }}
+        </div>
+      </div>
+
+      {# Préférences notifications ────────────────────────────────────── #}
+      <div class="mt-5 pt-5 border-t border-[#21262D]">
+        <p class="text-xs font-semibold text-[#8B949E] uppercase tracking-wider mb-3">Notifications</p>
+        <div class="space-y-3">
+          <label class="flex items-center gap-3 cursor-pointer">
+            {{ form.notify_on_error }}
+            <div>
+              <p class="text-sm text-[#E6EDF3]">Erreurs critiques</p>
+              <p class="text-xs text-[#484F58]">Recevoir un email pour chaque log ERROR ou CRITICAL</p>
+            </div>
+          </label>
+          <label class="flex items-center gap-3 cursor-pointer">
+            {{ form.notify_on_warning }}
+            <div>
+              <p class="text-sm text-[#E6EDF3]">Avertissements</p>
+              <p class="text-xs text-[#484F58]">Recevoir un email pour chaque log WARNING</p>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <div class="flex justify-end mt-5">
+        <button type="submit"
+                class="px-5 py-2 bg-[#388BFD] hover:bg-[#1F6FEB] text-white text-sm font-semibold
+                       rounded-lg transition-colors shadow-lg shadow-blue-500/20
+                       focus:outline-none focus:ring-2 focus:ring-[#388BFD] focus:ring-offset-2 focus:ring-offset-[#161B22]">
+          Enregistrer
+        </button>
+      </div>
+    </form>
+  </div>
+
+  {# ── Changement de mot de passe ───────────────────────────────────── #}
+  <div class="bg-[#161B22] border border-[#30363D] rounded-xl overflow-hidden">
+    <div class="px-6 py-4 border-b border-[#30363D]">
+      <h2 class="text-sm font-semibold text-[#E6EDF3]">Changer le mot de passe</h2>
+      <p class="text-xs text-[#8B949E] mt-0.5">Minimum 8 caractères</p>
+    </div>
+
+    <form method="post" action="{% url 'accounts:change_password' %}" class="px-6 py-5 space-y-4">
+      {% csrf_token %}
+
+      <div>
+        <label class="block text-xs font-medium text-[#8B949E] mb-1.5">Mot de passe actuel</label>
+        {{ password_form.current_password }}
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-[#8B949E] mb-1.5">Nouveau mot de passe</label>
+        {{ password_form.new_password }}
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-[#8B949E] mb-1.5">Confirmer</label>
+        {{ password_form.confirm_password }}
+      </div>
+
+      <div class="flex justify-end pt-1">
+        <button type="submit"
+                class="px-5 py-2 bg-[#21262D] hover:bg-[#30363D] text-[#E6EDF3] text-sm font-semibold
+                       rounded-lg border border-[#30363D] transition-colors">
+          Changer le mot de passe
+        </button>
+      </div>
+    </form>
+  </div>
+
+  {# ── Infos du compte ──────────────────────────────────────────────── #}
+  <div class="bg-[#161B22] border border-[#30363D] rounded-xl px-6 py-4">
+    <h2 class="text-sm font-semibold text-[#E6EDF3] mb-3">Informations du compte</h2>
+    <div class="grid grid-cols-2 gap-3 text-xs">
+      <div>
+        <p class="text-[#484F58] uppercase tracking-wider mb-0.5">Identifiant</p>
+        <p class="text-[#E6EDF3] font-mono">{{ request.user.username }}</p>
+      </div>
+      <div>
+        <p class="text-[#484F58] uppercase tracking-wider mb-0.5">Rôle</p>
+        <p class="text-[#388BFD] font-mono">{{ request.user.get_role_display }}</p>
+      </div>
+      <div>
+        <p class="text-[#484F58] uppercase tracking-wider mb-0.5">Membre depuis</p>
+        <p class="text-[#8B949E] font-mono">{{ request.user.date_joined|date:"d/m/Y" }}</p>
+      </div>
+      <div>
+        <p class="text-[#484F58] uppercase tracking-wider mb-0.5">Dernière connexion</p>
+        <p class="text-[#8B949E] font-mono">{{ request.user.last_login|date:"d/m/Y H:i"|default:"—" }}</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,503 @@
+================================================================================
+  LOGMONITOR DASHBOARD - PROCESSUS COMPLET D'INSTALLATION, LANCEMENT ET TEST
+================================================================================
+
+Date: 15 mai 2026
+Projet: LogMonitor Dashboard
+Stack: Django 5.0 · Python 3.11+ · PostgreSQL/SQLite · Tailwind CSS · HTMX
+
+
+================================================================================
+PHASE 1 : INSTALLATION
+================================================================================
+
+ÉTAPE 1.1 - Cloner le projet
+─────────────────────────────
+Commande:
+  git clone https://github.com/votre-repo/logmonitor.git
+  cd logmonitor
+
+Résultat attendu:
+  - Dossier logmonitor créé avec tous les fichiers du projet
+
+
+ÉTAPE 1.2 - Créer l'environnement virtuel Python
+──────────────────────────────────────────────────
+Commande:
+  python -m venv venv
+
+Activation Windows:
+  venv\Scripts\activate
+
+Activation Linux/macOS:
+  source venv/bin/activate
+
+Résultat attendu:
+  - L'invite de commande affiche le préfixe (venv)
+  - L'environnement virtuel est isolé
+
+
+ÉTAPE 1.3 - Installer les dépendances Python
+──────────────────────────────────────────────
+Commande:
+  pip install -r requirements.txt
+
+Résultat attendu:
+  - Tous les packages listés dans requirements.txt sont installés
+  - Aucun erreur "ERROR: Could not find a version"
+
+
+ÉTAPE 1.4 - Configurer les variables d'environnement
+──────────────────────────────────────────────────────
+Commande:
+  cp .env.example .env
+
+Éditer le fichier .env avec les paramètres minimum:
+  SECRET_KEY=votre-secret-key-ici
+  DEBUG=True
+  DATABASE_URL=sqlite:///db.sqlite3
+
+Pour générer une SECRET_KEY sécurisée:
+  python -c "import secrets; print(secrets.token_hex(50))"
+
+Résultat attendu:
+  - Fichier .env créé dans la racine du projet
+  - Variables d'environnement correctement configurées
+
+
+ÉTAPE 1.5 - Initialiser la base de données
+────────────────────────────────────────────
+Commande:
+  python manage.py migrate
+
+Résultat attendu:
+  - Migrations appliquées avec succès
+  - Fichier db.sqlite3 créé (si SQLite)
+  - Tables créées dans PostgreSQL (si utilisé)
+  - Pas d'erreurs de migration
+
+
+ÉTAPE 1.6 - Charger les données de démonstration
+──────────────────────────────────────────────────
+Commande:
+  python manage.py seed_data --logs 1000
+
+Données créées:
+  ✓ 10 sources (serveurs, services, bases de données…)
+  ✓ 1000 logs réalistes sur 48 heures
+  ✓ 2 alertes actives
+  ✓ Compte admin par défaut: admin / password123
+
+Résultat attendu:
+  - Commande exécutée sans erreurs
+  - Données insérées dans la base de données
+  - Compte admin accessible
+
+
+================================================================================
+PHASE 2 : LANCEMENT DE L'APPLICATION
+================================================================================
+
+ÉTAPE 2.1 - Démarrer le serveur de développement
+──────────────────────────────────────────────────
+Prérequis:
+  - Environnement virtuel activé
+  - Fichier .env correctement configuré
+  - Migrations appliquées
+  - Données de test chargées
+
+Commande:
+  python manage.py runserver
+
+Résultat attendu:
+  - Sortie console:
+    Starting development server at http://127.0.0.1:8000/
+    Quit the server with CONTROL-C
+  - Serveur écoute sur le port 8000
+  - Pas d'erreurs de démarrage
+
+
+ÉTAPE 2.2 - Accéder à l'application via le navigateur
+────────────────────────────────────────────────────────
+URLs d'accès:
+
+  Page de login:
+    http://localhost:8000/auth/login/
+
+  Dashboard (après connexion):
+    http://localhost:8000/dashboard/
+
+  Explorateur de logs:
+    http://localhost:8000/logs/
+
+  Admin Django (si admin activé):
+    http://localhost:8000/admin/
+
+Résultat attendu:
+  - Pages chargées sans erreurs 404
+  - Interface affichée avec Tailwind CSS
+  - Pas d'erreurs JavaScript dans la console
+
+
+ÉTAPE 2.3 - Se connecter avec le compte de démonstration
+──────────────────────────────────────────────────────────
+Identifiant: admin
+Mot de passe: password123
+
+Après connexion, vous devriez voir:
+  - Dashboard avec KPIs et graphiques
+  - Navigation latérale (sidebar) avec les options:
+    - Dashboard
+    - Logs
+    - Alertes
+    - Serveurs
+    - Services
+
+Résultat attendu:
+  - Session créée
+  - Redirection vers le dashboard
+  - Utilisateur identifié avec rôle admin
+
+
+================================================================================
+PHASE 3 : TESTS UNITAIRES ET DE FONCTIONNALITÉ
+================================================================================
+
+ÉTAPE 3.1 - Lancer tous les tests
+──────────────────────────────────
+Commande:
+  python manage.py test
+
+Résultat attendu:
+  - Total de 60 tests exécutés:
+    * accounts: 11 tests
+    * logs: 17 tests
+    * dashboard: 16 tests
+    * autres apps: 16 tests
+  - Tous les tests passent (OK)
+  - Pas d'erreurs de déploiement
+  - Aucun avertissement FAIL
+
+
+ÉTAPE 3.2 - Tests par application (détail)
+────────────────────────────────────────────
+Tests Authentification & RBAC:
+  python manage.py test apps.accounts
+  Résultat: 11 tests
+  Éléments testés:
+    - Login/Logout
+    - Création d'utilisateurs
+    - Rôles (Admin/Analyst/Viewer)
+    - Permissions RBAC
+
+Tests Logs:
+  python manage.py test apps.logs
+  Résultat: 17 tests
+  Éléments testés:
+    - Modèles LogEntry et LogSource
+    - Requêtes avec select_related
+    - Pagination
+    - Filtres et recherche
+    - Indexation
+
+Tests Dashboard:
+  python manage.py test apps.dashboard
+  Résultat: 16 tests
+  Éléments testés:
+    - Endpoints HTMX
+    - Graphiques Chart.js
+    - Auto-refresh 30s
+    - Context processors
+    - KPIs
+
+
+ÉTAPE 3.3 - Tests avec couverture de code
+───────────────────────────────────────────
+Installation optionnelle de coverage:
+  pip install coverage
+
+Générer le rapport:
+  coverage run manage.py test
+  coverage report --show-missing
+
+Générer un rapport HTML:
+  coverage run manage.py test
+  coverage report --show-missing
+  coverage html
+
+Accéder au rapport:
+  Ouvrir: htmlcov/index.html dans le navigateur
+
+Résultat attendu:
+  - Rapport de couverture > 80%
+  - Zones non testées identifiées
+  - Recommandations pour améliorer la couverture
+
+
+================================================================================
+PHASE 4 : VÉRIFICATION DES FONCTIONNALITÉS
+================================================================================
+
+FONCTIONNALITÉ 1 : Authentification
+─────────────────────────────────────
+À tester:
+  ✓ Login avec identifiant admin / password123
+  ✓ Accès au dashboard après login réussi
+  ✓ Logout depuis le menu utilisateur
+  ✓ Redirection automatique vers login si non authentifié
+  ✓ Messages d'erreur pour identifiants incorrects
+
+Résultat attendu:
+  - Toutes les opérations fonctionnent sans erreur 500
+  - Sécurité CSRF protégée
+  - Sessions gérées correctement
+
+
+FONCTIONNALITÉ 2 : Dashboard
+─────────────────────────────
+À tester:
+  ✓ KPIs affichés (nombre total de logs, alertes, etc.)
+  ✓ Graphique de volume Chart.js avec données réelles
+  ✓ Tableau des logs récents (derniers 50)
+  ✓ Auto-refresh HTMX toutes les 30 secondes
+  ✓ Recherche temps réel avec keyup delay 400ms
+  ✓ Filtre par niveau de log (INFO, ERROR, WARNING, etc.)
+  ✓ Sélection de période pour le graphique
+
+Résultat attendu:
+  - Dashboard responsive et fluide
+  - Graphiques correctement rendus
+  - HTMX met à jour sans rechargement de page
+  - Pas de lag ou ralentissement
+
+
+FONCTIONNALITÉ 3 : Explorateur de logs
+────────────────────────────────────────
+À tester:
+  ✓ Liste de tous les logs avec pagination (50 par page)
+  ✓ Accès à la page suivante / précédente
+  ✓ Recherche par mot-clé (HTMX)
+  ✓ Filtrage par niveau (ERROR, WARNING, INFO, DEBUG)
+  ✓ Filtrage par source (serveur, service, DB)
+  ✓ Tri par timestamp récents/anciens
+  ✓ Clic sur un log → Page de détail
+
+Résultat attendu:
+  - Pagination fonctionne sans rechargement
+  - Recherche rapide (< 1s)
+  - Filtres combinables
+  - Détail du log affiche le traceback (si disponible)
+
+
+FONCTIONNALITÉ 4 : Système d'alertes
+──────────────────────────────────────
+À tester:
+  ✓ Affichage des alertes actives dans le badge sidebar
+  ✓ Page des alertes accessible
+  ✓ Affichage de la sévérité (critique, grave, avertissement)
+  ✓ Statut des alertes (active, résolue)
+  ✓ Filtrage par sévérité
+  ✓ Marquer une alerte comme résolue
+
+Résultat attendu:
+  - Alertes correctement affichées
+  - Badges mis à jour en temps réel
+  - Interactions fonctionnelles
+
+
+FONCTIONNALITÉ 5 : RBAC (Rôles utilisateurs)
+──────────────────────────────────────────────
+À tester avec différents comptes:
+
+Admin:
+  ✓ Accès à /admin/ (administration Django)
+  ✓ Accès à tous les logs et alertes
+  ✓ Modification des alertes
+  ✓ Accès aux commandes d'administration
+
+Analyst:
+  ✓ Accès au dashboard et logs
+  ✓ Accès aux alertes
+  ✓ Peut éditer les alertes
+  ✗ N'a pas accès à /admin/
+
+Viewer:
+  ✓ Accès au dashboard et logs
+  ✓ Accès aux alertes (lecture seule)
+  ✗ Ne peut pas modifier les données
+  ✗ N'a pas accès à /admin/
+
+Résultat attendu:
+  - Chaque rôle a les bonnes permissions
+  - Erreur 403 Forbidden si accès non autorisé
+  - Restrictions appliquées correctement
+
+
+================================================================================
+COMMANDES UTILES SUPPLÉMENTAIRES
+================================================================================
+
+Gestion des données:
+──────────────────
+Créer un superuser supplémentaire:
+  python manage.py createsuperuser
+
+Régénérer complètement les données (vider + recharger):
+  python manage.py seed_data --logs 1000 --clear
+
+Lister toutes les commandes disponibles:
+  python manage.py help
+
+
+Gestion des migrations:
+──────────────────────
+Générer les migrations après modification des modèles:
+  python manage.py makemigrations
+
+Appliquer les migrations:
+  python manage.py migrate
+
+Voir le statut des migrations:
+  python manage.py showmigrations
+
+
+Outils de développement:
+────────────────────────
+Shell interactif Django (nécessite django-extensions):
+  python manage.py shell_plus
+
+Collecter les fichiers statiques (production):
+  python manage.py collectstatic --noinput
+
+Vérifier la configuration Django:
+  python manage.py check
+
+Afficher la structure de la base de données:
+  python manage.py sqlmigrate apps.logs 0001
+
+
+================================================================================
+VALIDATION FINALE DU STACK TECHNIQUE
+================================================================================
+
+Avant de déployer en production, vérifier:
+
+Backend:
+  ✓ Python 3.11+ (vérifier: python --version)
+  ✓ Django 5.0 (vérifier: pip show django)
+  ✓ Tous les requirements installés
+
+Base de données:
+  ✓ SQLite en développement (db.sqlite3 créé)
+  ✓ PostgreSQL 15+ en production (si utilisé)
+  ✓ Migrations appliquées (python manage.py migrate)
+  ✓ Tables créées et accessibles
+
+Frontend:
+  ✓ Tailwind CSS chargé et stylisé
+  ✓ HTMX fonctionnel (auto-refresh)
+  ✓ Django Templates rendus correctement
+  ✓ Assets statiques accessibles
+
+Graphiques:
+  ✓ Chart.js 4 chargé
+  ✓ Graphiques rendus avec données
+  ✓ Interactivité (survol, zoom, etc.)
+
+Fonts:
+  ✓ Inter (UI) affichée
+  ✓ JetBrains Mono (code/data) affichée
+
+Serveur:
+  ✓ Gunicorn opérationnel (production)
+  ✓ WhiteNoise gère les statics (production)
+  ✓ Pas d'erreurs 500
+
+
+================================================================================
+CHECKLIST FINALE D'INSTALLATION ET TEST
+================================================================================
+
+Installation:
+  □ Projet cloné
+  □ Environnement virtuel créé et activé
+  □ Requirements installés
+  □ Variables d'environnement configurées
+  □ Base de données initialisée
+  □ Données de démonstration chargées
+
+Lancement:
+  □ Serveur de développement démarre sans erreur
+  □ Application accessible sur http://localhost:8000
+  □ Login possible avec admin/password123
+  □ Dashboard affiche les données
+
+Tests unitaires:
+  □ Tous les 60 tests passent
+  □ 11 tests accounts OK
+  □ 17 tests logs OK
+  □ 16 tests dashboard OK
+  □ Couverture > 80%
+
+Fonctionnalités:
+  □ Authentification/Logout fonctionnels
+  □ Dashboard avec KPIs et graphiques
+  □ Explorateur de logs avec filtres
+  □ Système d'alertes actif
+  □ RBAC appliquée correctement
+  □ HTMX auto-refresh 30s
+  □ Recherche temps réel
+
+Performance:
+  □ Pas de requêtes N+1
+  □ Temps de réponse < 500ms
+  □ Pagination fluide
+  □ HTMX responsive
+
+
+================================================================================
+NOTES IMPORTANTES
+================================================================================
+
+1. SECRET_KEY
+   - Générer une nouvelle clé sécurisée pour la production
+   - Ne jamais commiter la vraie clé
+
+2. DEBUG
+   - DEBUG=True en développement uniquement
+   - DEBUG=False en production
+
+3. DATABASE_URL
+   - sqlite:///db.sqlite3 pour développement
+   - postgresql://user:pwd@host:5432/db pour production
+
+4. Sécurité CSRF
+   - Activée par défaut sur tous les formulaires
+   - Logout POST-only (protection contre CSRF logout)
+
+5. Auto-refresh HTMX
+   - Tableau des logs mis à jour toutes les 30s
+   - Peut être désactivé côté client si nécessaire
+
+6. Logs de démonstration
+   - 1000 logs couvrent 48 heures
+   - Timestamp généré aléatoirement dans cette période
+   - Peut être augmenté avec: seed_data --logs 5000
+
+7. Support navigateurs
+   - Chrome/Edge 80+
+   - Firefox 75+
+   - Safari 13+
+
+
+================================================================================
+FIN DU PROCESSUS D'INSTALLATION ET TEST
+================================================================================
+
+Pour toute question ou problème, consulter:
+  - README.md (documentation projet)
+  - Code commenté dans apps/
+  - Logs de la console Django
+  - htmlcov/index.html (rapport de couverture)
+
+Dernière mise à jour: 15 mai 2026

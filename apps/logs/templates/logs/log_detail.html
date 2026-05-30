@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}Log #{{ log.pk }} — LogMonitor{% endblock %}
+{% block page_heading %}Détail du log #{{ log.pk }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl space-y-4 animate-fade-in">
+
+  {# ── Navigation retour ─────────────────────────────────────────────── #}
+  <a href="{% url 'logs:list' %}"
+     class="inline-flex items-center gap-1.5 text-xs text-[#8B949E] hover:text-[#388BFD] transition-colors mb-2">
+    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+    </svg>
+    Retour aux logs
+  </a>
+
+  {# ── Carte principale ──────────────────────────────────────────────── #}
+  <div class="bg-[#161B22] border border-[#30363D] rounded-xl p-6">
+    <div class="flex items-start justify-between gap-4 mb-5">
+      <div class="flex items-center gap-3 flex-wrap">
+        {# Badge niveau #}
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold font-mono
+                     {% if log.level == 'DEBUG' %}text-slate-400 bg-slate-800 border border-slate-700
+                     {% elif log.level == 'INFO' %}text-blue-400 bg-blue-950 border border-blue-900
+                     {% elif log.level == 'WARNING' %}text-amber-400 bg-amber-950 border border-amber-900
+                     {% elif log.level == 'ERROR' %}text-red-400 bg-red-950 border border-red-900
+                     {% elif log.level == 'CRITICAL' %}text-red-300 bg-red-950 border border-red-700
+                     {% endif %}">
+          {{ log.level }}
+        </span>
+        {% if log.source %}
+          <span class="text-xs text-[#8B949E] font-mono bg-[#21262D] px-2.5 py-1 rounded border border-[#30363D]">
+            {{ log.source.name }}
+          </span>
+        {% endif %}
+        {% if log.logger_name %}
+          <span class="text-xs text-[#484F58] font-mono">{{ log.logger_name }}</span>
+        {% endif %}
+      </div>
+      <span class="text-xs text-[#484F58] font-mono flex-shrink-0">
+        {{ log.timestamp|date:"d/m/Y H:i:s.u" }}
+      </span>
+    </div>
+
+    {# Message principal #}
+    <div class="bg-[#0D1117] rounded-lg p-4 border border-[#21262D]">
+      <p class="text-sm text-[#E6EDF3] font-mono leading-relaxed break-all">{{ log.message }}</p>
+    </div>
+
+    {# Métadonnées ─────────────────────────────────────────────────────── #}
+    <div class="mt-5 grid grid-cols-2 sm:grid-cols-3 gap-3">
+      <div>
+        <p class="text-[10px] text-[#484F58] uppercase tracking-wider mb-1">ID</p>
+        <p class="text-xs font-mono text-[#8B949E]">#{{ log.pk }}</p>
+      </div>
+      <div>
+        <p class="text-[10px] text-[#484F58] uppercase tracking-wider mb-1">Ingéré le</p>
+        <p class="text-xs font-mono text-[#8B949E]">{{ log.ingested_at|date:"d/m/Y H:i:s" }}</p>
+      </div>
+      {% if log.file_path %}
+      <div>
+        <p class="text-[10px] text-[#484F58] uppercase tracking-wider mb-1">Fichier</p>
+        <p class="text-xs font-mono text-[#8B949E] break-all">
+          {{ log.file_path }}{% if log.line_number %}:{{ log.line_number }}{% endif %}
+        </p>
+      </div>
+      {% endif %}
+      <div>
+        <p class="text-[10px] text-[#484F58] uppercase tracking-wider mb-1">Statut</p>
+        <span class="inline-flex items-center gap-1.5 text-xs font-mono
+                     {% if log.is_resolved %}text-emerald-400{% else %}text-amber-400{% endif %}">
+          <span class="w-1.5 h-1.5 rounded-full
+                       {% if log.is_resolved %}bg-emerald-400{% else %}bg-amber-400 animate-pulse{% endif %}"></span>
+          {% if log.is_resolved %}Résolu{% else %}En cours{% endif %}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  {# ── Traceback ─────────────────────────────────────────────────────── #}
+  {% if log.traceback %}
+  <div class="bg-[#161B22] border border-[#30363D] rounded-xl overflow-hidden">
+    <div class="flex items-center justify-between px-5 py-3.5 border-b border-[#30363D]">
+      <div class="flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-red-500"></span>
+        <h3 class="text-sm font-semibold text-[#E6EDF3]">Traceback</h3>
+      </div>
+      <button onclick="copyTraceback()" class="text-xs text-[#484F58] hover:text-[#8B949E] transition-colors font-mono">
+        Copier
+      </button>
+    </div>
+    <pre id="traceback-content"
+         class="px-5 py-4 text-xs text-red-300 font-mono leading-relaxed overflow-x-auto
+                bg-[#0D1117] whitespace-pre-wrap break-all">{{ log.traceback }}</pre>
+  </div>
+  {% endif %}
+
+  {# ── Données additionnelles JSON ──────────────────────────────────── #}
+  {% if log.extra_data %}
+  <div class="bg-[#161B22] border border-[#30363D] rounded-xl overflow-hidden">
+    <div class="px-5 py-3.5 border-b border-[#30363D]">
+      <h3 class="text-sm font-semibold text-[#E6EDF3]">Données additionnelles</h3>
+    </div>
+    <pre class="px-5 py-4 text-xs text-[#8B949E] font-mono leading-relaxed overflow-x-auto
+                bg-[#0D1117]">{{ log.extra_data|default:"{}" }}</pre>
+  </div>
+  {% endif %}
+
+</div>
+
+<script>
+function copyTraceback() {
+  const text = document.getElementById('traceback-content').innerText;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = event.target;
+    btn.textContent = 'Copié ✓';
+    btn.classList.add('text-emerald-400');
+    setTimeout(() => { btn.textContent = 'Copier'; btn.classList.remove('text-emerald-400'); }, 2000);
+  });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Serveurs — LogMonitor{% endblock %}
+{% block page_heading %}Serveurs{% endblock %}
+
+{% block content %}
+<div class="space-y-5 animate-fade-in">
+
+  {# ── Barre de statut globale ─────────────────────────────────────── #}
+  <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+    <div class="bg-[#161B22] border border-[#30363D] rounded-xl px-4 py-3 text-center">
+      <p class="text-xl font-bold font-mono text-[#E6EDF3]">{{ total }}</p>
+      <p class="text-[11px] text-[#8B949E]">Serveurs</p>
+    </div>
+    <div class="bg-[#161B22] border border-emerald-900/40 rounded-xl px-4 py-3 text-center">
+      <p class="text-xl font-bold font-mono text-emerald-400">{{ status_counts.online|default:0 }}</p>
+      <p class="text-[11px] text-[#8B949E]">En ligne</p>
+    </div>
+    <div class="bg-[#161B22] border border-amber-900/40 rounded-xl px-4 py-3 text-center">
+      <p class="text-xl font-bold font-mono text-amber-400">{{ status_counts.warning|default:0 }}</p>
+      <p class="text-[11px] text-[#8B949E]">Avert.</p>
+    </div>
+    <div class="bg-[#161B22] border border-red-900/40 rounded-xl px-4 py-3 text-center">
+      <p class="text-xl font-bold font-mono text-red-400">{{ status_counts.critical|default:0 }}</p>
+      <p class="text-[11px] text-[#8B949E]">Critique{{ status_counts.critical|pluralize }}</p>
+    </div>
+    <div class="bg-[#161B22] border border-[#30363D] rounded-xl px-4 py-3 text-center">
+      <p class="text-xl font-bold font-mono text-slate-500">{{ status_counts.offline|default:0 }}</p>
+      <p class="text-[11px] text-[#8B949E]">Hors ligne</p>
+    </div>
+  </div>
+
+  {# ── Grille des serveurs par environnement ───────────────────────── #}
+  {% if servers_by_env %}
+    {% for env_name, env_servers in servers_by_env.items %}
+    <div>
+      <h2 class="text-xs font-semibold uppercase tracking-widest text-[#484F58] mb-3 flex items-center gap-2">
+        <span class="flex-1 h-px bg-[#21262D]"></span>
+        {{ env_name }}
+        <span class="text-[#388BFD]">({{ env_servers|length }})</span>
+        <span class="flex-1 h-px bg-[#21262D]"></span>
+      </h2>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        {% for server in env_servers %}
+        <div class="bg-[#161B22] border border-[#30363D] rounded-xl p-5 hover:border-[#484F58]
+                    transition-colors duration-200
+                    {% if server.status == 'critical' %}border-red-900/50{% endif %}">
+
+          {# En-tête de la carte #}
+          <div class="flex items-start justify-between mb-4">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="w-2 h-2 rounded-full flex-shrink-0 {{ server.status_dot }}"></span>
+                <h3 class="text-sm font-semibold text-[#E6EDF3] truncate">{{ server.name }}</h3>
+              </div>
+              <p class="text-[11px] text-[#484F58] font-mono pl-4">
+                {{ server.ip_address|default:server.hostname|default:"—" }}
+              </p>
+            </div>
+            <span class="ml-2 px-2 py-0.5 text-[10px] font-semibold font-mono rounded border {{ server.status_color }}">
+              {{ server.get_status_display }}
+            </span>
+          </div>
+
+          {# ── Métriques avec barres de progression ──────────────── #}
+          <div class="space-y-3">
+
+            {# CPU #}
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-[11px] text-[#8B949E] font-mono">CPU</span>
+                <span class="text-[11px] font-mono font-semibold
+                             {% if server.cpu_percent >= 90 %}text-red-400
+                             {% elif server.cpu_percent >= 75 %}text-amber-400
+                             {% else %}text-[#E6EDF3]{% endif %}">
+                  {% if server.cpu_percent is not None %}{{ server.cpu_percent|floatformat:1 }}%{% else %}—{% endif %}
+                </span>
+              </div>
+              <div class="h-1.5 bg-[#21262D] rounded-full overflow-hidden">
+                {% if server.cpu_percent is not None %}
+                  <div class="h-full {{ server.cpu_color }} rounded-full transition-all duration-700"
+                       style="width: {{ server.cpu_percent|floatformat:0 }}%"></div>
+                {% endif %}
+              </div>
+            </div>
+
+            {# RAM #}
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-[11px] text-[#8B949E] font-mono">RAM</span>
+                <span class="text-[11px] font-mono font-semibold
+                             {% if server.memory_percent >= 90 %}text-red-400
+                             {% elif server.memory_percent >= 80 %}text-amber-400
+                             {% else %}text-[#E6EDF3]{% endif %}">
+                  {% if server.memory_percent is not None %}{{ server.memory_percent|floatformat:1 }}%{% else %}—{% endif %}
+                </span>
+              </div>
+              <div class="h-1.5 bg-[#21262D] rounded-full overflow-hidden">
+                {% if server.memory_percent is not None %}
+                  <div class="h-full {{ server.memory_color }} rounded-full transition-all duration-700"
+                       style="width: {{ server.memory_percent|floatformat:0 }}%"></div>
+                {% endif %}
+              </div>
+            </div>
+
+            {# Disque #}
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-[11px] text-[#8B949E] font-mono">Disque</span>
+                <span class="text-[11px] font-mono font-semibold
+                             {% if server.disk_percent >= 90 %}text-red-400
+                             {% elif server.disk_percent >= 75 %}text-amber-400
+                             {% else %}text-[#E6EDF3]{% endif %}">
+                  {% if server.disk_percent is not None %}{{ server.disk_percent|floatformat:1 }}%{% else %}—{% endif %}
+                </span>
+              </div>
+              <div class="h-1.5 bg-[#21262D] rounded-full overflow-hidden">
+                {% if server.disk_percent is not None %}
+                  <div class="h-full {{ server.disk_color }} rounded-full transition-all duration-700"
+                       style="width: {{ server.disk_percent|floatformat:0 }}%"></div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+
+          {# Footer de la carte #}
+          <div class="flex items-center justify-between mt-4 pt-3 border-t border-[#21262D]">
+            <span class="text-[11px] font-mono text-[#484F58]">
+              Uptime : <span class="text-[#8B949E]">{{ server.uptime_display }}</span>
+            </span>
+            {% if server.last_seen %}
+              <span class="text-[10px] font-mono text-[#484F58]">
+                {{ server.last_seen|timesince }} ago
+              </span>
+            {% else %}
+              <span class="text-[10px] font-mono text-[#484F58]">Jamais vu</span>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+
+  {% else %}
+    {# État vide #}
+    <div class="bg-[#161B22] border border-[#30363D] rounded-xl flex flex-col items-center justify-center py-20 text-[#484F58]">
+      <svg class="w-12 h-12 mb-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+              d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"/>
+      </svg>
+      <p class="text-sm text-[#8B949E]">Aucun serveur enregistré</p>
+      <p class="text-xs mt-1">Utilisez <code class="font-mono text-[#388BFD]">python manage.py seed_data</code> pour en créer</p>
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}

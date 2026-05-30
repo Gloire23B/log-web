@@ -1,0 +1,21 @@
+{# ──────────────────────────────────────────────────────────────────────────
+   partials/alert_rows.html
+   Partial HTMX : lignes du tableau des alertes.
+   Retourné par AlertListView (filtres) et polling auto (60s).
+────────────────────────────────────────────────────────────────────────── #}
+{% if alerts %}
+  <div class="divide-y divide-[#21262D]">
+    {% for alert in alerts %}
+      {% include "partials/alert_row.html" %}
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="flex flex-col items-center justify-center py-16 text-[#484F58]">
+    <svg class="w-12 h-12 mb-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    </svg>
+    <p class="text-sm text-[#8B949E]">Aucune alerte trouvée</p>
+    <p class="text-xs mt-1">Modifiez les filtres ou attendez de nouvelles alertes</p>
+  </div>
+{% endif %}

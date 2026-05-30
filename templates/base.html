@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  <title>{% block title %}LogMonitor{% endblock %}</title>
+
+  {# ── Fonts: JetBrains Mono (data) + Inter (UI) ─────────────────────────── #}
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  {# ── Tailwind CSS CDN (production: remplacer par build) ──────────────────── #}
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            /* Design tokens extraits du Figma Make */
+            bg: {
+              primary:   '#0D1117',   /* fond principal */
+              secondary: '#161B22',   /* sidebar, cards */
+              tertiary:  '#21262D',   /* hover states, inputs */
+              overlay:   '#30363D',   /* borders, séparateurs */
+            },
+            text: {
+              primary:   '#E6EDF3',
+              secondary: '#8B949E',
+              muted:     '#484F58',
+            },
+            accent: {
+              blue:    '#388BFD',
+              blueDim: '#1F6FEB',
+            },
+            status: {
+              error:    '#F85149',
+              warning:  '#E3B341',
+              info:     '#58A6FF',
+              success:  '#3FB950',
+              critical: '#FF6E6E',
+            },
+          },
+          animation: {
+            'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'fade-in': 'fadeIn 0.2s ease-out',
+            'slide-in': 'slideIn 0.3s ease-out',
+          },
+          keyframes: {
+            fadeIn: { from: { opacity: '0', transform: 'translateY(4px)' }, to: { opacity: '1', transform: 'translateY(0)' } },
+            slideIn: { from: { opacity: '0', transform: 'translateX(-8px)' }, to: { opacity: '1', transform: 'translateX(0)' } },
+          },
+        }
+      }
+    }
+  </script>
+
+  {# ── Styles globaux ────────────────────────────────────────────────────────── #}
+  <style>
+    :root { color-scheme: dark; }
+    body { background-color: #0D1117; color: #E6EDF3; }
+
+    /* Scrollbar custom dark */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #161B22; }
+    ::-webkit-scrollbar-thumb { background: #30363D; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #484F58; }
+
+    /* HTMX loading indicator */
+    .htmx-indicator { opacity: 0; transition: opacity 200ms ease-in; }
+    .htmx-request .htmx-indicator { opacity: 1; }
+    .htmx-request.htmx-indicator { opacity: 1; }
+
+    /* Log level badges */
+    .badge-debug    { @apply text-slate-400 bg-slate-800 border border-slate-700; }
+    .badge-info     { @apply text-blue-400 bg-blue-950 border border-blue-800; }
+    .badge-warning  { @apply text-amber-400 bg-amber-950 border border-amber-800; }
+    .badge-error    { @apply text-red-400 bg-red-950 border border-red-800; }
+    .badge-critical { @apply text-red-300 bg-red-950 border border-red-700 font-semibold; }
+
+    /* Sidebar active state */
+    .nav-link-active {
+      @apply bg-[#21262D] text-[#E6EDF3] border-l-2 border-[#388BFD];
+    }
+
+    /* Focus ring cohérent */
+    *:focus-visible { outline: 2px solid #388BFD; outline-offset: 2px; border-radius: 4px; }
+
+    /* Table hover */
+    .log-row:hover { background-color: #161B22; }
+    .log-row { transition: background-color 150ms ease; }
+  </style>
+
+  {# ── HTMX ──────────────────────────────────────────────────────────────────── #}
+  <script src="https://unpkg.com/htmx.org@1.9.12" defer></script>
+
+  {# ── Chart.js ─────────────────────────────────────────────────────────────── #}
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js" defer></script>
+
+  {% block extra_head %}{% endblock %}
+</head>
+<body class="font-sans antialiased">
+
+  {% block body %}
+  <div class="flex h-screen overflow-hidden bg-[#0D1117]">
+
+    {# ── Sidebar ─────────────────────────────────────────────────────────────── #}
+    {% include "components/sidebar.html" %}
+
+    {# ── Contenu principal ─────────────────────────────────────────────────── #}
+    <div class="flex flex-col flex-1 min-w-0 overflow-hidden">
+
+      {# ── Header ─────────────────────────────────────────────────────────── #}
+      {% include "components/header.html" %}
+
+      {# ── Zone de contenu scrollable ─────────────────────────────────────── #}
+      <main class="flex-1 overflow-y-auto bg-[#0D1117] px-6 py-6">
+        {# Messages Django ─────────────────────────────────────────────────── #}
+        {% if messages %}
+          <div class="mb-4 space-y-2">
+            {% for message in messages %}
+              <div class="flex items-center gap-3 px-4 py-3 rounded-lg border animate-fade-in
+                {% if message.tags == 'error' %}bg-red-950 border-red-800 text-red-300
+                {% elif message.tags == 'warning' %}bg-amber-950 border-amber-800 text-amber-300
+                {% elif message.tags == 'success' %}bg-emerald-950 border-emerald-800 text-emerald-300
+                {% else %}bg-blue-950 border-blue-800 text-blue-300{% endif %}">
+                <span class="text-sm">{{ message }}</span>
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+  </div>
+  {% endblock %}
+
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

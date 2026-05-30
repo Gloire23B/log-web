@@ -1,0 +1,99 @@
+{# ──────────────────────────────────────────────────────────────────────────
+   partials/log_table_rows.html
+   Partial HTMX : rendu des lignes du tableau de logs.
+   Utilisé par :
+     - dashboard/index.html (auto-refresh 30s)
+     - RecentLogsHtmxView (filtres dynamiques)
+     - LogListView (pagination HTMX)
+────────────────────────────────────────────────────────────────────────── #}
+{% if recent_logs %}
+  {% for log in recent_logs %}
+  <tr class="log-row border-b border-[#21262D] cursor-pointer"
+      onclick="window.location='{% url 'logs:detail' log.pk %}'"
+      title="{{ log.message|truncatechars:200 }}">
+
+    {# Horodatage #}
+    <td class="px-5 py-3 whitespace-nowrap">
+      <span class="font-mono text-[#8B949E] text-[11px]">
+        {{ log.timestamp|date:"d/m/Y" }}
+      </span>
+      <span class="font-mono text-[#484F58] text-[11px] ml-1">
+        {{ log.timestamp|date:"H:i:s" }}
+      </span>
+    </td>
+
+    {# Niveau de sévérité #}
+    <td class="px-4 py-3 whitespace-nowrap">
+      <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-semibold font-mono
+                   {% if log.level == 'DEBUG' %}text-slate-400 bg-slate-800 border border-slate-700
+                   {% elif log.level == 'INFO' %}text-blue-400 bg-blue-950 border border-blue-900
+                   {% elif log.level == 'WARNING' %}text-amber-400 bg-amber-950 border border-amber-900
+                   {% elif log.level == 'ERROR' %}text-red-400 bg-red-950 border border-red-900
+                   {% elif log.level == 'CRITICAL' %}text-red-300 bg-red-950 border border-red-700
+                   {% endif %}">
+        <span class="w-1 h-1 rounded-full flex-shrink-0
+                     {% if log.level == 'DEBUG' %}bg-slate-500
+                     {% elif log.level == 'INFO' %}bg-blue-400
+                     {% elif log.level == 'WARNING' %}bg-amber-400
+                     {% elif log.level == 'ERROR' %}bg-red-500
+                     {% elif log.level == 'CRITICAL' %}bg-red-400 animate-pulse
+                     {% endif %}"></span>
+        {{ log.level }}
+      </span>
+    </td>
+
+    {# Source #}
+    <td class="px-4 py-3 whitespace-nowrap">
+      {% if log.source %}
+        <span class="text-[11px] text-[#8B949E] font-mono bg-[#21262D] px-2 py-0.5 rounded">
+          {{ log.source.name|truncatechars:20 }}
+        </span>
+      {% else %}
+        <span class="text-[11px] text-[#484F58]">—</span>
+      {% endif %}
+    </td>
+
+    {# Message #}
+    <td class="px-4 py-3 max-w-0">
+      <div class="flex items-center gap-2">
+        <p class="text-xs text-[#E6EDF3] truncate">{{ log.message|truncatechars:120 }}</p>
+        {% if log.has_traceback %}
+          <span class="flex-shrink-0 px-1.5 py-0.5 text-[9px] font-semibold uppercase
+                       bg-purple-950 text-purple-400 border border-purple-900 rounded font-mono">
+            trace
+          </span>
+        {% endif %}
+      </div>
+      {% if log.logger_name %}
+        <p class="text-[10px] text-[#484F58] font-mono mt-0.5 truncate">{{ log.logger_name }}</p>
+      {% endif %}
+    </td>
+
+    {# Action #}
+    <td class="px-5 py-3 text-right whitespace-nowrap">
+      <a href="{% url 'logs:detail' log.pk %}"
+         class="p-1.5 text-[#484F58] hover:text-[#388BFD] rounded-md transition-colors inline-block"
+         onclick="event.stopPropagation()"
+         title="Voir le détail">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+        </svg>
+      </a>
+    </td>
+  </tr>
+  {% endfor %}
+{% else %}
+  <tr>
+    <td colspan="5" class="px-5 py-12 text-center">
+      <div class="flex flex-col items-center gap-3 text-[#484F58]">
+        <svg class="w-10 h-10 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+        <p class="text-sm text-[#8B949E]">Aucun log trouvé</p>
+        <p class="text-xs">Essayez de modifier les filtres ou la période</p>
+      </div>
+    </td>
+  </tr>
+{% endif %}

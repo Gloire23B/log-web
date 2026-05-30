@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Services — LogMonitor{% endblock %}
+{% block page_heading %}Services{% endblock %}
+
+{% block content %}
+<div class="space-y-5 animate-fade-in">
+
+  {# ── Barre de statut globale ─────────────────────────────────────── #}
+  <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+    <div class="bg-[#161B22] border border-[#30363D] rounded-xl px-4 py-3 text-center">
+      <p class="text-xl font-bold font-mono text-[#E6EDF3]">{{ total }}</p>
+      <p class="text-[11px] text-[#8B949E]">Services</p>
+    </div>
+    <div class="bg-[#161B22] border border-emerald-900/40 rounded-xl px-4 py-3 text-center">
+      <p class="text-xl font-bold font-mono text-emerald-400">{{ status_counts.operational|default:0 }}</p>
+      <p class="text-[11px] text-[#8B949E]">Opérationnel{{ status_counts.operational|pluralize }}</p>
+    </div>
+    <div class="bg-[#161B22] border border-amber-900/40 rounded-xl px-4 py-3 text-center">
+      <p class="text-xl font-bold font-mono text-amber-400">{{ status_counts.degraded|default:0 }}</p>
+      <p class="text-[11px] text-[#8B949E]">Dégradé{{ status_counts.degraded|pluralize }}</p>
+    </div>
+    <div class="bg-[#161B22] border border-red-900/40 rounded-xl px-4 py-3 text-center">
+      <p class="text-xl font-bold font-mono text-red-400">{{ status_counts.major|default:0 }}</p>
+      <p class="text-[11px] text-[#8B949E]">Panne{{ status_counts.major|pluralize }}</p>
+    </div>
+    <div class="bg-[#161B22] border border-blue-900/40 rounded-xl px-4 py-3 text-center">
+      <p class="text-xl font-bold font-mono text-blue-400">{{ status_counts.maintenance|default:0 }}</p>
+      <p class="text-[11px] text-[#8B949E]">Maintenance</p>
+    </div>
+  </div>
+
+  {# ── Grille des services par type ────────────────────────────────── #}
+  {% if services_by_type %}
+    {% for type_name, type_services in services_by_type.items %}
+    <div>
+      <h2 class="text-xs font-semibold uppercase tracking-widest text-[#484F58] mb-3 flex items-center gap-2">
+        <span class="flex-1 h-px bg-[#21262D]"></span>
+        {{ type_name }}
+        <span class="text-[#388BFD]">({{ type_services|length }})</span>
+        <span class="flex-1 h-px bg-[#21262D]"></span>
+      </h2>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        {% for svc in type_services %}
+        <div class="bg-[#161B22] border border-[#30363D] rounded-xl p-5 hover:border-[#484F58]
+                    transition-colors duration-200
+                    {% if svc.status == 'major' %}border-red-900/50
+                    {% elif svc.status == 'degraded' %}border-amber-900/40{% endif %}">
+
+          {# En-tête #}
+          <div class="flex items-start justify-between mb-4">
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="w-2 h-2 rounded-full flex-shrink-0 {{ svc.status_dot }}"></span>
+                <h3 class="text-sm font-semibold text-[#E6EDF3] truncate">
+                  {{ svc.display_name|default:svc.name }}
+                </h3>
+              </div>
+              <div class="flex items-center gap-2 pl-4">
+                <span class="text-[11px] text-[#484F58] font-mono">{{ svc.name }}</span>
+                {% if svc.version %}
+                  <span class="text-[10px] bg-[#21262D] text-[#8B949E] px-1.5 py-0.5 rounded font-mono">
+                    v{{ svc.version }}
+                  </span>
+                {% endif %}
+              </div>
+            </div>
+            <span class="ml-2 px-2 py-0.5 text-[10px] font-semibold font-mono rounded border {{ svc.status_color }} flex-shrink-0">
+              {{ svc.get_status_display }}
+            </span>
+          </div>
+
+          {# Métriques en grille 2x2 #}
+          <div class="grid grid-cols-2 gap-3 mb-4">
+
+            {# Latence moyenne #}
+            <div class="bg-[#0D1117] rounded-lg px-3 py-2.5">
+              <p class="text-[10px] text-[#484F58] uppercase tracking-wider mb-1">Latence moy.</p>
+              <p class="text-sm font-bold font-mono {{ svc.latency_color }}">
+                {% if svc.avg_latency_ms is not None %}
+                  {{ svc.avg_latency_ms|floatformat:0 }}<span class="text-[10px] font-normal text-[#484F58]">ms</span>
+                {% else %}—{% endif %}
+              </p>
+            </div>
+
+            {# Taux d'erreur #}
+            <div class="bg-[#0D1117] rounded-lg px-3 py-2.5">
+              <p class="text-[10px] text-[#484F58] uppercase tracking-wider mb-1">Taux erreur</p>
+              <p class="text-sm font-bold font-mono {{ svc.error_rate_color }}">
+                {% if svc.error_rate is not None %}
+                  {{ svc.error_rate|floatformat:2 }}<span class="text-[10px] font-normal text-[#484F58]">%</span>
+                {% else %}—{% endif %}
+              </p>
+            </div>
+
+            {# Req/s #}
+            <div class="bg-[#0D1117] rounded-lg px-3 py-2.5">
+              <p class="text-[10px] text-[#484F58] uppercase tracking-wider mb-1">Req/s</p>
+              <p class="text-sm font-bold font-mono text-[#E6EDF3]">
+                {% if svc.requests_per_sec is not None %}
+                  {{ svc.requests_per_sec|floatformat:1 }}
+                {% else %}—{% endif %}
+              </p>
+            </div>
+
+            {# Uptime 30j #}
+            <div class="bg-[#0D1117] rounded-lg px-3 py-2.5">
+              <p class="text-[10px] text-[#484F58] uppercase tracking-wider mb-1">Uptime 30j</p>
+              <p class="text-sm font-bold font-mono
+                        {% if svc.uptime_30d and svc.uptime_30d >= 99.9 %}text-emerald-400
+                        {% elif svc.uptime_30d and svc.uptime_30d >= 99 %}text-amber-400
+                        {% elif svc.uptime_30d %}text-red-400
+                        {% else %}text-[#8B949E]{% endif %}">
+                {% if svc.uptime_30d is not None %}
+                  {{ svc.uptime_30d|floatformat:2 }}<span class="text-[10px] font-normal text-[#484F58]">%</span>
+                {% else %}—{% endif %}
+              </p>
+            </div>
+          </div>
+
+          {# Footer #}
+          <div class="flex items-center justify-between pt-3 border-t border-[#21262D]">
+            {% if svc.endpoint %}
+              <span class="text-[10px] font-mono text-[#484F58] truncate max-w-[160px]" title="{{ svc.endpoint }}">
+                {{ svc.endpoint }}
+              </span>
+            {% else %}
+              <span class="text-[10px] font-mono text-[#484F58]">{{ svc.get_service_type_display }}</span>
+            {% endif %}
+            {% if svc.last_check %}
+              <span class="text-[10px] font-mono text-[#484F58] flex-shrink-0">
+                {{ svc.last_check|timesince }} ago
+              </span>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+
+  {% else %}
+    <div class="bg-[#161B22] border border-[#30363D] rounded-xl flex flex-col items-center justify-center py-20 text-[#484F58]">
+      <svg class="w-12 h-12 mb-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+              d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
+      </svg>
+      <p class="text-sm text-[#8B949E]">Aucun service enregistré</p>
+      <p class="text-xs mt-1">Utilisez <code class="font-mono text-[#388BFD]">python manage.py seed_data</code></p>
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}

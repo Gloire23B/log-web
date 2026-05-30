@@ -1,0 +1,7 @@
+{# partials/alert_stats_badge.html — badge compteur d'alertes pour sidebar #}
+{% if total > 0 %}
+  <span class="ml-auto px-1.5 py-0.5 text-[10px] font-semibold bg-red-900 text-red-300
+               rounded-full min-w-[20px] text-center font-mono">
+    {{ total }}
+  </span>
+{% endif %}

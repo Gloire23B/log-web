@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Connexion — LogMonitor</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          animation: {
+            'fade-up': 'fadeUp 0.5s ease-out both',
+            'fade-in': 'fadeIn 0.4s ease-out both',
+          },
+          keyframes: {
+            fadeUp: { from: { opacity: '0', transform: 'translateY(16px)' }, to: { opacity: '1', transform: 'translateY(0)' } },
+            fadeIn: { from: { opacity: '0' }, to: { opacity: '1' } },
+          },
+        }
+      }
+    }
+  </script>
+  <style>
+    :root { color-scheme: dark; }
+    body { background: #0D1117; }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: #161B22; }
+    ::-webkit-scrollbar-thumb { background: #30363D; border-radius: 2px; }
+
+    /* Grille de fond animée */
+    .grid-bg {
+      background-image:
+        linear-gradient(rgba(56,139,253,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(56,139,253,0.04) 1px, transparent 1px);
+      background-size: 40px 40px;
+    }
+    /* Glow décoratif */
+    .glow-blue {
+      background: radial-gradient(ellipse 60% 40% at 50% 0%, rgba(56,139,253,0.15) 0%, transparent 70%);
+    }
+    /* Scanline effect */
+    .scanline::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,0.03) 2px,
+        rgba(0,0,0,0.03) 4px
+      );
+      pointer-events: none;
+    }
+  </style>
+</head>
+
+<body class="font-sans antialiased min-h-screen flex">
+
+  {# ════════════════════════════════════════════════════════════════════════
+     Layout split-screen : panneau gauche décoratif + formulaire à droite
+  ════════════════════════════════════════════════════════════════════════ #}
+  <div class="flex w-full min-h-screen">
+
+    {# ── Panneau gauche — Branding & stats ────────────────────────────── #}
+    <div class="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-[#0D1117] flex-col">
+
+      {# Fond grille #}
+      <div class="absolute inset-0 grid-bg"></div>
+      <div class="absolute inset-0 glow-blue"></div>
+
+      {# Contenu #}
+      <div class="relative z-10 flex flex-col h-full px-12 py-10">
+
+        {# Logo #}
+        <div class="flex items-center gap-3 animate-fade-in" style="animation-delay:0.1s">
+          <div class="w-9 h-9 rounded-xl bg-[#388BFD] flex items-center justify-center shadow-lg shadow-blue-500/20">
+            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+          </div>
+          <span class="text-lg font-semibold text-[#E6EDF3] tracking-tight">LogMonitor</span>
+        </div>
+
+        {# Titre central #}
+        <div class="flex-1 flex flex-col justify-center">
+          <div class="animate-fade-up" style="animation-delay:0.2s">
+            <p class="text-xs font-mono text-[#388BFD] uppercase tracking-widest mb-4">
+              Observabilité · Temps réel · Production
+            </p>
+            <h2 class="text-3xl font-bold text-[#E6EDF3] leading-tight mb-4">
+              Supervisez votre<br>
+              <span class="text-[#388BFD]">infrastructure</span><br>
+              en temps réel.
+            </h2>
+            <p class="text-sm text-[#8B949E] leading-relaxed max-w-xs">
+              Centralisez vos logs, détectez les anomalies et réagissez avant que vos utilisateurs ne le remarquent.
+            </p>
+          </div>
+
+          {# Faux terminal live ─────────────────────────────────────────── #}
+          <div class="mt-10 bg-[#161B22] border border-[#30363D] rounded-xl overflow-hidden
+                      animate-fade-up shadow-2xl" style="animation-delay:0.35s">
+            {# Barre de titre terminal #}
+            <div class="flex items-center gap-2 px-4 py-2.5 bg-[#21262D] border-b border-[#30363D]">
+              <div class="w-2.5 h-2.5 rounded-full bg-red-500/70"></div>
+              <div class="w-2.5 h-2.5 rounded-full bg-amber-500/70"></div>
+              <div class="w-2.5 h-2.5 rounded-full bg-emerald-500/70"></div>
+              <span class="ml-2 text-[11px] font-mono text-[#484F58]">logmonitor — live stream</span>
+              <span class="ml-auto flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span class="text-[10px] font-mono text-emerald-400">LIVE</span>
+              </span>
+            </div>
+            {# Faux logs animés #}
+            <div class="px-4 py-3 space-y-1.5 font-mono text-[11px]">
+              <div class="flex items-start gap-3 opacity-50">
+                <span class="text-[#484F58] flex-shrink-0">14:22:01</span>
+                <span class="text-blue-400 flex-shrink-0">INFO</span>
+                <span class="text-[#8B949E]">api-gateway: request processed 200 /api/v2/users</span>
+              </div>
+              <div class="flex items-start gap-3 opacity-70">
+                <span class="text-[#484F58] flex-shrink-0">14:22:03</span>
+                <span class="text-amber-400 flex-shrink-0">WARN</span>
+                <span class="text-[#8B949E]">db-primary: slow query detected (2340ms)</span>
+              </div>
+              <div class="flex items-start gap-3">
+                <span class="text-[#484F58] flex-shrink-0">14:22:05</span>
+                <span class="text-red-400 flex-shrink-0">ERROR</span>
+                <span class="text-[#E6EDF3]">auth-service: connection timeout to redis:6379</span>
+              </div>
+              <div class="flex items-start gap-3 opacity-90">
+                <span class="text-[#484F58] flex-shrink-0">14:22:07</span>
+                <span class="text-blue-400 flex-shrink-0">INFO</span>
+                <span class="text-[#8B949E]">worker-01: job queue processed 847 tasks</span>
+              </div>
+              <div class="flex items-start gap-3">
+                <span class="text-[#484F58] flex-shrink-0">14:22:09</span>
+                <span class="text-red-300 flex-shrink-0 font-semibold">CRIT</span>
+                <span class="text-red-300">prod-db: disk usage above 95% threshold ⚠</span>
+              </div>
+              {# Curseur clignotant #}
+              <div class="flex items-center gap-2 pt-0.5">
+                <span class="text-[#484F58]">14:22:11</span>
+                <span class="w-2 h-3.5 bg-[#388BFD] animate-pulse"></span>
+              </div>
+            </div>
+          </div>
+
+          {# Stats rapides ─────────────────────────────────────────────── #}
+          <div class="mt-6 grid grid-cols-3 gap-3 animate-fade-up" style="animation-delay:0.45s">
+            <div class="bg-[#161B22] border border-[#30363D] rounded-lg px-3 py-2.5 text-center">
+              <p class="text-lg font-bold font-mono text-[#E6EDF3]">99.9<span class="text-xs">%</span></p>
+              <p class="text-[10px] text-[#484F58] mt-0.5">Uptime</p>
+            </div>
+            <div class="bg-[#161B22] border border-[#30363D] rounded-lg px-3 py-2.5 text-center">
+              <p class="text-lg font-bold font-mono text-[#388BFD]">&lt;50<span class="text-xs">ms</span></p>
+              <p class="text-[10px] text-[#484F58] mt-0.5">Latence</p>
+            </div>
+            <div class="bg-[#161B22] border border-[#30363D] rounded-lg px-3 py-2.5 text-center">
+              <p class="text-lg font-bold font-mono text-[#E6EDF3]">1M<span class="text-xs">+</span></p>
+              <p class="text-[10px] text-[#484F58] mt-0.5">Logs/jour</p>
+            </div>
+          </div>
+        </div>
+
+        {# Footer #}
+        <p class="text-[11px] text-[#484F58] font-mono animate-fade-in" style="animation-delay:0.5s">
+          © 2025 LogMonitor · v2.1.0
+        </p>
+      </div>
+    </div>
+
+    {# ── Panneau droit — Formulaire de connexion ─────────────────────── #}
+    <div class="flex-1 flex items-center justify-center bg-[#0D1117] px-6 py-10 relative">
+      {# Subtle border left on lg #}
+      <div class="hidden lg:block absolute left-0 top-0 bottom-0 w-px bg-gradient-to-b
+                  from-transparent via-[#30363D] to-transparent"></div>
+
+      <div class="w-full max-w-sm">
+
+        {# Logo mobile #}
+        <div class="flex items-center gap-2 mb-8 lg:hidden animate-fade-up">
+          <div class="w-8 h-8 rounded-lg bg-[#388BFD] flex items-center justify-center">
+            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+          </div>
+          <span class="font-semibold text-[#E6EDF3]">LogMonitor</span>
+        </div>
+
+        {# En-tête formulaire #}
+        <div class="mb-8 animate-fade-up" style="animation-delay:0.1s">
+          <h1 class="text-2xl font-bold text-[#E6EDF3] mb-2">Connexion</h1>
+          <p class="text-sm text-[#8B949E]">Accédez à votre tableau de bord</p>
+        </div>
+
+        {# Erreurs globales du formulaire #}
+        {% if form.non_field_errors %}
+          <div class="mb-4 flex items-start gap-3 p-3.5 bg-red-950/60 border border-red-900 rounded-lg animate-fade-up">
+            <svg class="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <div>
+              {% for error in form.non_field_errors %}
+                <p class="text-sm text-red-300">{{ error }}</p>
+              {% endfor %}
+            </div>
+          </div>
+        {% endif %}
+
+        {# ── Formulaire de connexion ────────────────────────────────── #}
+        <form method="post" action="{% url 'accounts:login' %}" novalidate class="space-y-5">
+          {% csrf_token %}
+
+          {# Identifiant #}
+          <div class="animate-fade-up" style="animation-delay:0.15s">
+            <label for="{{ form.username.id_for_label }}"
+                   class="block text-xs font-medium text-[#8B949E] mb-1.5">
+              Identifiant
+            </label>
+            {{ form.username }}
+            {% if form.username.errors %}
+              <p class="mt-1.5 text-xs text-red-400">{{ form.username.errors.0 }}</p>
+            {% endif %}
+          </div>
+
+          {# Mot de passe #}
+          <div class="animate-fade-up" style="animation-delay:0.2s">
+            <div class="flex items-center justify-between mb-1.5">
+              <label for="{{ form.password.id_for_label }}"
+                     class="text-xs font-medium text-[#8B949E]">
+                Mot de passe
+              </label>
+              <a href="#" class="text-xs text-[#388BFD] hover:text-[#58A6FF] transition-colors">
+                Mot de passe oublié ?
+              </a>
+            </div>
+            <div class="relative">
+              {{ form.password }}
+              {# Toggle show/hide password #}
+              <button type="button"
+                      onclick="togglePassword()"
+                      class="absolute right-3 top-1/2 -translate-y-1/2 text-[#484F58] hover:text-[#8B949E] transition-colors">
+                <svg id="eye-icon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                </svg>
+              </button>
+            </div>
+            {% if form.password.errors %}
+              <p class="mt-1.5 text-xs text-red-400">{{ form.password.errors.0 }}</p>
+            {% endif %}
+          </div>
+
+          {# Se souvenir + connexion #}
+          <div class="flex items-center justify-between animate-fade-up" style="animation-delay:0.25s">
+            <label class="flex items-center gap-2 cursor-pointer">
+              {{ form.remember_me }}
+              <span class="text-xs text-[#8B949E]">Se souvenir de moi</span>
+            </label>
+          </div>
+
+          {# Bouton de connexion #}
+          <button type="submit"
+                  class="w-full py-2.5 px-4 bg-[#388BFD] hover:bg-[#1F6FEB] active:bg-[#1158C7]
+                         text-white text-sm font-semibold rounded-lg
+                         transition-all duration-200 shadow-lg shadow-blue-500/20
+                         focus:outline-none focus:ring-2 focus:ring-[#388BFD] focus:ring-offset-2 focus:ring-offset-[#0D1117]
+                         animate-fade-up"
+                  style="animation-delay:0.3s">
+            Se connecter
+          </button>
+
+          {# Champ next caché #}
+          {% if next %}
+            <input type="hidden" name="next" value="{{ next }}">
+          {% endif %}
+        </form>
+
+        {# Séparateur #}
+        <div class="flex items-center gap-3 my-6 animate-fade-up" style="animation-delay:0.35s">
+          <div class="flex-1 h-px bg-[#21262D]"></div>
+          <span class="text-[11px] text-[#484F58] font-mono">INFO</span>
+          <div class="flex-1 h-px bg-[#21262D]"></div>
+        </div>
+
+        {# Note d'environnement (dev uniquement) #}
+        <div class="p-3.5 bg-[#161B22] border border-[#30363D] rounded-lg animate-fade-up" style="animation-delay:0.4s">
+          <p class="text-[11px] text-[#484F58] font-mono leading-relaxed">
+            <span class="text-[#8B949E]">$</span> Compte démo disponible :<br>
+            <span class="text-blue-400">admin</span> / <span class="text-amber-400">password123</span>
+          </p>
+        </div>
+
+        {# Footer #}
+        <p class="text-center text-[11px] text-[#484F58] mt-8 font-mono animate-fade-in" style="animation-delay:0.5s">
+          LogMonitor v2.1 · Accès sécurisé
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function togglePassword() {
+      const input = document.getElementById('{{ form.password.id_for_label }}') ||
+                    document.querySelector('input[type="password"]');
+      const icon = document.getElementById('eye-icon');
+      if (!input) return;
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.innerHTML = `
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>`;
+      } else {
+        input.type = 'password';
+        icon.innerHTML = `
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>`;
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,372 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Dashboard — LogMonitor{% endblock %}
+{% block page_heading %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="space-y-6 animate-fade-in">
+
+  {# ════════════════════════════════════════════════════════════════════════
+     Section 1 — KPI Cards (4 métriques principales)
+  ════════════════════════════════════════════════════════════════════════ #}
+  <div class="grid grid-cols-2 xl:grid-cols-4 gap-4">
+
+    {# ── Total Logs (24h) ─────────────────────────────────────────────── #}
+    <div class="bg-[#161B22] border border-[#30363D] rounded-xl p-5 hover:border-[#388BFD]/40 transition-colors duration-200">
+      <div class="flex items-start justify-between mb-3">
+        <div class="p-2 rounded-lg bg-blue-950 border border-blue-800">
+          <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h10M4 18h6"/>
+          </svg>
+        </div>
+        {% if total_prev > 0 %}
+          {% widthratio total_24h total_prev 100 as pct %}
+          <span class="text-[11px] font-mono {% if total_24h >= total_prev %}text-emerald-400{% else %}text-red-400{% endif %}">
+            {% if total_24h >= total_prev %}↑{% else %}↓{% endif %}
+            {{ pct|add:"-100"|floatformat:0 }}%
+          </span>
+        {% endif %}
+      </div>
+      <p class="text-2xl font-bold text-[#E6EDF3] font-mono mb-1">{{ total_24h|intcomma }}</p>
+      <p class="text-xs text-[#8B949E]">Logs totaux <span class="text-[#484F58]">(24h)</span></p>
+    </div>
+
+    {# ── Erreurs ─────────────────────────────────────────────────────── #}
+    <div class="bg-[#161B22] border border-[#30363D] rounded-xl p-5
+                {% if error_count > 20 %}border-red-900/50{% endif %}
+                hover:border-red-800/40 transition-colors duration-200">
+      <div class="flex items-start justify-between mb-3">
+        <div class="p-2 rounded-lg bg-red-950 border border-red-900">
+          <svg class="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+        </div>
+        {% if error_prev > 0 %}
+          <span class="text-[11px] font-mono {% if error_count > error_prev %}text-red-400{% else %}text-emerald-400{% endif %}">
+            {% if error_count > error_prev %}↑{% else %}↓{% endif %}
+          </span>
+        {% endif %}
+      </div>
+      <p class="text-2xl font-bold {% if error_count > 20 %}text-red-400{% else %}text-[#E6EDF3]{% endif %} font-mono mb-1">
+        {{ error_count|intcomma }}
+      </p>
+      <p class="text-xs text-[#8B949E]">Erreurs <span class="text-[#484F58]">(ERROR + CRITICAL)</span></p>
+    </div>
+
+    {# ── Warnings ────────────────────────────────────────────────────── #}
+    <div class="bg-[#161B22] border border-[#30363D] rounded-xl p-5 hover:border-amber-800/40 transition-colors duration-200">
+      <div class="flex items-start justify-between mb-3">
+        <div class="p-2 rounded-lg bg-amber-950 border border-amber-900">
+          <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+          </svg>
+        </div>
+      </div>
+      <p class="text-2xl font-bold text-[#E6EDF3] font-mono mb-1">{{ warning_count|intcomma }}</p>
+      <p class="text-xs text-[#8B949E]">Avertissements <span class="text-[#484F58]">(24h)</span></p>
+    </div>
+
+    {# ── Sources Actives ──────────────────────────────────────────────── #}
+    <div class="bg-[#161B22] border border-[#30363D] rounded-xl p-5 hover:border-emerald-800/40 transition-colors duration-200">
+      <div class="flex items-start justify-between mb-3">
+        <div class="p-2 rounded-lg bg-emerald-950 border border-emerald-900">
+          <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"/>
+          </svg>
+        </div>
+        {% if active_alerts > 0 %}
+          <span class="px-2 py-0.5 text-[10px] font-semibold bg-red-900/60 text-red-300 rounded-full border border-red-800">
+            {{ active_alerts }} alerte{{ active_alerts|pluralize }}
+          </span>
+        {% endif %}
+      </div>
+      <p class="text-2xl font-bold text-[#E6EDF3] font-mono mb-1">{{ active_sources }}</p>
+      <p class="text-xs text-[#8B949E]">Sources actives <span class="text-[#484F58]">(24h)</span></p>
+    </div>
+  </div>
+
+  {# ════════════════════════════════════════════════════════════════════════
+     Section 2 — Graphique de volume + Top sources
+  ════════════════════════════════════════════════════════════════════════ #}
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+
+    {# ── Graphique de volume (2/3) ─────────────────────────────────────── #}
+    <div class="xl:col-span-2 bg-[#161B22] border border-[#30363D] rounded-xl p-5">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h2 class="text-sm font-semibold text-[#E6EDF3]">Volume de logs</h2>
+          <p class="text-xs text-[#8B949E] mt-0.5">Répartition par niveau de sévérité</p>
+        </div>
+        {# Sélecteur de période — HTMX ─────────────────────────────────── #}
+        <div class="flex items-center gap-1 bg-[#0D1117] rounded-lg p-1 border border-[#30363D]">
+          {% for period, label in period_choices|default:"1h,1H|6h,6H|24h,24H|7d,7J" %}
+          {% endfor %}
+          <button onclick="updateChart('1h')"   data-period="1h"  class="period-btn px-2.5 py-1 text-[11px] rounded-md text-[#8B949E] hover:text-[#E6EDF3] transition-colors">1H</button>
+          <button onclick="updateChart('6h')"   data-period="6h"  class="period-btn px-2.5 py-1 text-[11px] rounded-md text-[#8B949E] hover:text-[#E6EDF3] transition-colors">6H</button>
+          <button onclick="updateChart('24h')"  data-period="24h" class="period-btn px-2.5 py-1 text-[11px] rounded-md bg-[#21262D] text-[#E6EDF3] transition-colors" id="btn-24h">24H</button>
+          <button onclick="updateChart('7d')"   data-period="7d"  class="period-btn px-2.5 py-1 text-[11px] rounded-md text-[#8B949E] hover:text-[#E6EDF3] transition-colors">7J</button>
+        </div>
+      </div>
+      <div class="relative h-48">
+        <canvas id="volumeChart"></canvas>
+        <div id="chart-spinner" class="htmx-indicator absolute inset-0 flex items-center justify-center bg-[#161B22]/80 rounded-lg">
+          <div class="w-5 h-5 border-2 border-[#388BFD] border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      </div>
+    </div>
+
+    {# ── Top sources par erreurs (1/3) ────────────────────────────────── #}
+    <div class="bg-[#161B22] border border-[#30363D] rounded-xl p-5">
+      <h2 class="text-sm font-semibold text-[#E6EDF3] mb-1">Top sources</h2>
+      <p class="text-xs text-[#8B949E] mb-4">Par volume d'erreurs (24h)</p>
+
+      {% if top_error_sources %}
+        <div class="space-y-3">
+          {% for src in top_error_sources %}
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-xs text-[#E6EDF3] truncate max-w-[130px]">
+                  {{ src.source__name|default:"(sans source)" }}
+                </span>
+                <span class="text-xs font-mono text-red-400">{{ src.error_count }}</span>
+              </div>
+              {# Barre de progression relative #}
+              {% with top_count=top_error_sources.0.error_count %}
+              {% widthratio src.error_count top_count 100 as bar_pct %}
+              <div class="h-1.5 bg-[#21262D] rounded-full overflow-hidden">
+                <div class="h-full bg-gradient-to-r from-red-600 to-red-400 rounded-full transition-all duration-500"
+                     style="width: {{ bar_pct }}%"></div>
+              </div>
+              {% endwith %}
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="flex flex-col items-center justify-center h-28 text-[#484F58]">
+          <svg class="w-8 h-8 mb-2 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          <p class="text-xs">Aucune erreur détectée</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {# ════════════════════════════════════════════════════════════════════════
+     Section 3 — Tableau des logs récents
+  ════════════════════════════════════════════════════════════════════════ #}
+  <div class="bg-[#161B22] border border-[#30363D] rounded-xl overflow-hidden">
+
+    {# En-tête du tableau avec filtres ────────────────────────────────── #}
+    <div class="flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-b border-[#30363D]">
+      <div>
+        <h2 class="text-sm font-semibold text-[#E6EDF3]">Logs récents</h2>
+        <p class="text-xs text-[#8B949E] mt-0.5">Dernières 24h — mise à jour automatique</p>
+      </div>
+
+      {# Filtres HTMX ──────────────────────────────────────────────────── #}
+      <div class="flex flex-wrap items-center gap-2">
+        {# Filtre niveau #}
+        <select
+          name="level"
+          class="bg-[#0D1117] border border-[#30363D] text-[#8B949E] text-xs rounded-lg px-3 py-1.5
+                 focus:outline-none focus:border-[#388BFD] transition-colors"
+          hx-get="{% url 'dashboard:htmx_recent_logs' %}"
+          hx-trigger="change"
+          hx-target="#log-table-body"
+          hx-indicator="#table-spinner"
+          hx-include="[name='level'],[name='source_id'],[name='search']">
+          <option value="">Tous les niveaux</option>
+          <option value="DEBUG">DEBUG</option>
+          <option value="INFO">INFO</option>
+          <option value="WARNING">WARNING</option>
+          <option value="ERROR">ERROR</option>
+          <option value="CRITICAL">CRITICAL</option>
+        </select>
+
+        {# Bouton rafraîchir #}
+        <button
+          class="flex items-center gap-1.5 px-3 py-1.5 text-xs text-[#8B949E] border border-[#30363D]
+                 rounded-lg hover:text-[#E6EDF3] hover:border-[#484F58] transition-colors"
+          hx-get="{% url 'dashboard:htmx_recent_logs' %}"
+          hx-target="#log-table-body"
+          hx-indicator="#table-spinner">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+          </svg>
+          Rafraîchir
+        </button>
+
+        {# Spinner HTMX #}
+        <div id="table-spinner" class="htmx-indicator">
+          <div class="w-4 h-4 border-2 border-[#388BFD] border-t-transparent rounded-full animate-spin"></div>
+        </div>
+
+        {# Lien vers tous les logs #}
+        <a href="{% url 'logs:list' %}"
+           class="flex items-center gap-1.5 px-3 py-1.5 text-xs text-[#388BFD] border border-[#388BFD]/40
+                  rounded-lg hover:bg-[#388BFD]/10 transition-colors">
+          Voir tout
+          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+
+    {# Tableau ──────────────────────────────────────────────────────────── #}
+    <div class="overflow-x-auto">
+      <table class="w-full text-xs">
+        <thead>
+          <tr class="bg-[#0D1117] border-b border-[#30363D]">
+            <th class="text-left px-5 py-3 text-[#484F58] font-semibold uppercase tracking-wider w-40">Horodatage</th>
+            <th class="text-left px-4 py-3 text-[#484F58] font-semibold uppercase tracking-wider w-24">Niveau</th>
+            <th class="text-left px-4 py-3 text-[#484F58] font-semibold uppercase tracking-wider w-32">Source</th>
+            <th class="text-left px-4 py-3 text-[#484F58] font-semibold uppercase tracking-wider">Message</th>
+            <th class="text-right px-5 py-3 text-[#484F58] font-semibold uppercase tracking-wider w-16">Action</th>
+          </tr>
+        </thead>
+        <tbody id="log-table-body"
+               hx-get="{% url 'dashboard:htmx_recent_logs' %}"
+               hx-trigger="every 30s"
+               hx-target="#log-table-body"
+               hx-swap="innerHTML">
+          {% include "partials/log_table_rows.html" with recent_logs=recent_logs %}
+        </tbody>
+      </table>
+    </div>
+
+    {# Footer du tableau #}
+    <div class="flex items-center justify-between px-5 py-3 border-t border-[#30363D] bg-[#0D1117]/50">
+      <span class="text-xs text-[#484F58] font-mono">
+        Affichage de {{ recent_logs|length }} entrées
+      </span>
+      <div class="flex items-center gap-1.5 text-[11px] text-[#484F58]">
+        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+        Auto-refresh 30s
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ── Initialisation du graphique Chart.js ─────────────────────────────────────
+const chartData = {{ chart_data_json|safe }};
+let volumeChart = null;
+
+document.addEventListener('DOMContentLoaded', () => {
+  initChart(chartData);
+});
+
+function initChart(data) {
+  const ctx = document.getElementById('volumeChart');
+  if (!ctx) return;
+
+  // Destruction du graphique existant si nécessaire
+  if (volumeChart) volumeChart.destroy();
+
+  volumeChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: data.labels,
+      datasets: data.datasets.map(ds => ({
+        label: ds.label,
+        data: ds.data,
+        backgroundColor: ds.color + '40',  // Transparence 25%
+        borderColor: ds.color,
+        borderWidth: 1,
+        borderRadius: 2,
+        borderSkipped: false,
+      })),
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: {
+          position: 'top',
+          align: 'end',
+          labels: {
+            color: '#8B949E',
+            font: { size: 11, family: 'JetBrains Mono' },
+            boxWidth: 8, boxHeight: 8,
+            usePointStyle: true, pointStyle: 'circle',
+            padding: 12,
+          },
+        },
+        tooltip: {
+          backgroundColor: '#161B22',
+          borderColor: '#30363D',
+          borderWidth: 1,
+          titleColor: '#E6EDF3',
+          bodyColor: '#8B949E',
+          titleFont: { size: 11, family: 'JetBrains Mono' },
+          bodyFont: { size: 11, family: 'JetBrains Mono' },
+          padding: 10,
+          callbacks: {
+            label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString('fr-FR')}`,
+          },
+        },
+      },
+      scales: {
+        x: {
+          stacked: true,
+          grid: { display: false },
+          border: { color: '#21262D' },
+          ticks: {
+            color: '#484F58',
+            font: { size: 10, family: 'JetBrains Mono' },
+            maxTicksLimit: 12,
+          },
+        },
+        y: {
+          stacked: true,
+          grid: { color: '#21262D', drawTicks: false },
+          border: { color: 'transparent', dash: [4, 4] },
+          ticks: {
+            color: '#484F58',
+            font: { size: 10, family: 'JetBrains Mono' },
+            padding: 8,
+          },
+        },
+      },
+    },
+  });
+}
+
+// ── Changement de période (HTMX-like fetch) ──────────────────────────────────
+function updateChart(period) {
+  // Met à jour le bouton actif
+  document.querySelectorAll('.period-btn').forEach(btn => {
+    btn.classList.remove('bg-[#21262D]', 'text-[#E6EDF3]');
+    btn.classList.add('text-[#8B949E]');
+    if (btn.dataset.period === period) {
+      btn.classList.add('bg-[#21262D]', 'text-[#E6EDF3]');
+      btn.classList.remove('text-[#8B949E]');
+    }
+  });
+
+  // Affiche le spinner
+  document.getElementById('chart-spinner')?.classList.add('htmx-request');
+
+  fetch(`{% url 'dashboard:htmx_chart_volume' %}?period=${period}`)
+    .then(r => r.json())
+    .then(data => {
+      initChart(data);
+    })
+    .catch(err => console.error('Erreur chargement graphique:', err))
+    .finally(() => {
+      document.getElementById('chart-spinner')?.classList.remove('htmx-request');
+    });
+}
+</script>
+{% endblock %}

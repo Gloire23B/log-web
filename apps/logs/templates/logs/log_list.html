@@ -1,0 +1,261 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Logs — LogMonitor{% endblock %}
+{% block page_heading %}Explorateur de Logs{% endblock %}
+
+{% block content %}
+<div class="space-y-4 animate-fade-in">
+
+  {# ════════════════════════════════════════════════════════════════════════
+     Barre de filtres complète
+  ════════════════════════════════════════════════════════════════════════ #}
+  <div class="bg-[#161B22] border border-[#30363D] rounded-xl p-4">
+    <div class="flex flex-wrap items-end gap-3">
+
+      {# ── Recherche plein texte ──────────────────────────────────────── #}
+      <div class="flex-1 min-w-[200px]">
+        <label class="block text-[11px] font-medium text-[#484F58] mb-1.5 uppercase tracking-wider">Recherche</label>
+        <div class="relative">
+          <input
+            type="text"
+            name="search"
+            value="{{ filters.search }}"
+            placeholder="Message, source, logger…"
+            id="search-input"
+            class="w-full bg-[#0D1117] border border-[#30363D] rounded-lg pl-9 pr-4 py-2
+                   text-[#E6EDF3] text-sm placeholder-[#484F58]
+                   focus:outline-none focus:border-[#388BFD] focus:ring-1 focus:ring-[#388BFD]
+                   transition-colors duration-200"
+            hx-get="{% url 'logs:list' %}"
+            hx-trigger="keyup changed delay:400ms"
+            hx-target="#log-table-body"
+            hx-include="#filter-form"
+            hx-indicator="#search-indicator">
+          <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#484F58]"
+               fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"/>
+          </svg>
+          <div id="search-indicator" class="htmx-indicator absolute right-3 top-1/2 -translate-y-1/2">
+            <div class="w-3.5 h-3.5 border-2 border-[#388BFD] border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        </div>
+      </div>
+
+      {# ── Filtre Niveau ──────────────────────────────────────────────── #}
+      <div class="w-36">
+        <label class="block text-[11px] font-medium text-[#484F58] mb-1.5 uppercase tracking-wider">Niveau</label>
+        <select name="level" id="filter-level"
+                class="w-full bg-[#0D1117] border border-[#30363D] rounded-lg px-3 py-2
+                       text-[#E6EDF3] text-sm focus:outline-none focus:border-[#388BFD]
+                       focus:ring-1 focus:ring-[#388BFD] transition-colors"
+                hx-get="{% url 'logs:list' %}"
+                hx-trigger="change"
+                hx-target="#log-table-body"
+                hx-include="#filter-form"
+                hx-indicator="#table-indicator">
+          <option value="">Tous</option>
+          {% for value, label in levels %}
+            <option value="{{ value }}" {% if filters.level == value %}selected{% endif %}>
+              {{ label }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      {# ── Filtre Source ──────────────────────────────────────────────── #}
+      <div class="w-44">
+        <label class="block text-[11px] font-medium text-[#484F58] mb-1.5 uppercase tracking-wider">Source</label>
+        <select name="source_id"
+                class="w-full bg-[#0D1117] border border-[#30363D] rounded-lg px-3 py-2
+                       text-[#E6EDF3] text-sm focus:outline-none focus:border-[#388BFD]
+                       focus:ring-1 focus:ring-[#388BFD] transition-colors"
+                hx-get="{% url 'logs:list' %}"
+                hx-trigger="change"
+                hx-target="#log-table-body"
+                hx-include="#filter-form"
+                hx-indicator="#table-indicator">
+          <option value="">Toutes les sources</option>
+          {% for source in sources %}
+            <option value="{{ source.pk }}"
+                    {% if filters.source_id == source.pk|stringformat:"s" %}selected{% endif %}>
+              {{ source.name }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      {# ── Date de début ─────────────────────────────────────────────── #}
+      <div class="w-40">
+        <label class="block text-[11px] font-medium text-[#484F58] mb-1.5 uppercase tracking-wider">Du</label>
+        <input type="date" name="date_from" value="{{ filters.date_from }}"
+               class="w-full bg-[#0D1117] border border-[#30363D] rounded-lg px-3 py-2
+                      text-[#E6EDF3] text-sm focus:outline-none focus:border-[#388BFD]
+                      focus:ring-1 focus:ring-[#388BFD] transition-colors"
+               hx-get="{% url 'logs:list' %}"
+               hx-trigger="change"
+               hx-target="#log-table-body"
+               hx-include="#filter-form">
+      </div>
+
+      {# ── Date de fin ───────────────────────────────────────────────── #}
+      <div class="w-40">
+        <label class="block text-[11px] font-medium text-[#484F58] mb-1.5 uppercase tracking-wider">Au</label>
+        <input type="date" name="date_to" value="{{ filters.date_to }}"
+               class="w-full bg-[#0D1117] border border-[#30363D] rounded-lg px-3 py-2
+                      text-[#E6EDF3] text-sm focus:outline-none focus:border-[#388BFD]
+                      focus:ring-1 focus:ring-[#388BFD] transition-colors"
+               hx-get="{% url 'logs:list' %}"
+               hx-trigger="change"
+               hx-target="#log-table-body"
+               hx-include="#filter-form">
+      </div>
+
+      {# ── Bouton réinitialiser ──────────────────────────────────────── #}
+      <a href="{% url 'logs:list' %}"
+         class="flex items-center gap-1.5 px-3 py-2 text-xs text-[#8B949E] border border-[#30363D]
+                rounded-lg hover:text-[#E6EDF3] hover:border-[#484F58] transition-colors">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+        Reset
+      </a>
+
+      {# Séparateur #}
+      <div class="w-px h-5 bg-[#30363D]"></div>
+
+      {# Export CSV #}
+      <a href="{% url 'logs:export_csv' %}?{{ request.GET.urlencode }}"
+         title="Exporter en CSV (max 10 000 lignes)"
+         class="flex items-center gap-1.5 px-3 py-2 text-xs text-emerald-400 border border-emerald-800/60
+                rounded-lg hover:bg-emerald-950/40 transition-colors">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+        CSV
+      </a>
+
+      {# Export JSON #}
+      <a href="{% url 'logs:export_json' %}?{{ request.GET.urlencode }}"
+         title="Exporter en JSON (max 10 000 lignes)"
+         class="flex items-center gap-1.5 px-3 py-2 text-xs text-blue-400 border border-blue-800/60
+                rounded-lg hover:bg-blue-950/40 transition-colors">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+        </svg>
+        JSON
+      </a>
+
+    </div>
+
+    {# Formulaire caché regroupant tous les filtres pour hx-include ────── #}
+    <form id="filter-form" class="hidden">
+      <input name="search"    value="{{ filters.search }}">
+      <input name="level"     value="{{ filters.level }}">
+      <input name="source_id" value="{{ filters.source_id }}">
+      <input name="date_from" value="{{ filters.date_from }}">
+      <input name="date_to"   value="{{ filters.date_to }}">
+    </form>
+  </div>
+
+  {# ════════════════════════════════════════════════════════════════════════
+     Tableau principal
+  ════════════════════════════════════════════════════════════════════════ #}
+  <div class="bg-[#161B22] border border-[#30363D] rounded-xl overflow-hidden">
+
+    {# Info barre #}
+    <div class="flex items-center justify-between px-5 py-3 border-b border-[#30363D] bg-[#0D1117]/50">
+      <div class="flex items-center gap-3">
+        <span class="text-xs text-[#8B949E]">
+          <span class="text-[#E6EDF3] font-mono font-semibold">{{ paginator.count|intcomma }}</span>
+          entrée{{ paginator.count|pluralize }} trouvée{{ paginator.count|pluralize }}
+        </span>
+        <div id="table-indicator" class="htmx-indicator">
+          <div class="w-3.5 h-3.5 border-2 border-[#388BFD] border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      </div>
+      <span class="text-xs text-[#484F58] font-mono">
+        Page {{ page_obj.number }} / {{ paginator.num_pages }}
+      </span>
+    </div>
+
+    {# Table #}
+    <div class="overflow-x-auto">
+      <table class="w-full text-xs">
+        <thead>
+          <tr class="bg-[#0D1117] border-b border-[#30363D]">
+            <th class="text-left px-5 py-3 text-[#484F58] font-semibold uppercase tracking-wider w-40">Horodatage</th>
+            <th class="text-left px-4 py-3 text-[#484F58] font-semibold uppercase tracking-wider w-24">Niveau</th>
+            <th class="text-left px-4 py-3 text-[#484F58] font-semibold uppercase tracking-wider w-36">Source</th>
+            <th class="text-left px-4 py-3 text-[#484F58] font-semibold uppercase tracking-wider">Message</th>
+            <th class="text-right px-5 py-3 text-[#484F58] font-semibold uppercase tracking-wider w-16">Action</th>
+          </tr>
+        </thead>
+        <tbody id="log-table-body">
+          {% include "partials/log_table_rows.html" with recent_logs=logs %}
+        </tbody>
+      </table>
+    </div>
+
+    {# ── Pagination ────────────────────────────────────────────────────── #}
+    {% if is_paginated %}
+    <div class="flex items-center justify-between px-5 py-4 border-t border-[#30363D]">
+      <span class="text-xs text-[#484F58] font-mono">
+        {{ page_obj.start_index }}–{{ page_obj.end_index }} / {{ paginator.count|intcomma }}
+      </span>
+      <div class="flex items-center gap-1">
+
+        {# Première page #}
+        {% if page_obj.has_previous %}
+          <a href="?page=1{% if filters.level %}&level={{ filters.level }}{% endif %}{% if filters.search %}&search={{ filters.search }}{% endif %}"
+             class="p-1.5 text-[#484F58] hover:text-[#E6EDF3] hover:bg-[#21262D] rounded transition-colors">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/>
+            </svg>
+          </a>
+          <a href="?page={{ page_obj.previous_page_number }}{% if filters.level %}&level={{ filters.level }}{% endif %}{% if filters.search %}&search={{ filters.search }}{% endif %}"
+             class="p-1.5 text-[#484F58] hover:text-[#E6EDF3] hover:bg-[#21262D] rounded transition-colors">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+          </a>
+        {% endif %}
+
+        {# Numéros de pages #}
+        {% for num in paginator.page_range %}
+          {% if num == page_obj.number %}
+            <span class="w-7 h-7 flex items-center justify-center text-xs font-semibold
+                         bg-[#388BFD] text-white rounded font-mono">{{ num }}</span>
+          {% elif num >= page_obj.number|add:"-2" and num <= page_obj.number|add:"2" %}
+            <a href="?page={{ num }}{% if filters.level %}&level={{ filters.level }}{% endif %}{% if filters.search %}&search={{ filters.search }}{% endif %}"
+               class="w-7 h-7 flex items-center justify-center text-xs text-[#8B949E]
+                      hover:text-[#E6EDF3] hover:bg-[#21262D] rounded transition-colors font-mono">
+              {{ num }}
+            </a>
+          {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+          <a href="?page={{ page_obj.next_page_number }}{% if filters.level %}&level={{ filters.level }}{% endif %}{% if filters.search %}&search={{ filters.search }}{% endif %}"
+             class="p-1.5 text-[#484F58] hover:text-[#E6EDF3] hover:bg-[#21262D] rounded transition-colors">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+          </a>
+          <a href="?page={{ paginator.num_pages }}{% if filters.level %}&level={{ filters.level }}{% endif %}{% if filters.search %}&search={{ filters.search }}{% endif %}"
+             class="p-1.5 text-[#484F58] hover:text-[#E6EDF3] hover:bg-[#21262D] rounded transition-colors">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"/>
+            </svg>
+          </a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

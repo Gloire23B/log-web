@@ -1,0 +1,107 @@
+{# ──────────────────────────────────────────────────────────────────────────
+   partials/alert_row.html
+   Ligne individuelle d'une alerte.
+   Les boutons Acquitter/Résoudre envoient un POST HTMX
+   et remplacent uniquement cette ligne (hx-swap="outerHTML").
+────────────────────────────────────────────────────────────────────────── #}
+<div id="alert-{{ alert.pk }}"
+     class="flex items-start gap-4 px-5 py-4 hover:bg-[#0D1117]/40 transition-colors">
+
+  {# ── Indicateur de sévérité ───────────────────────────────────────── #}
+  <div class="flex-shrink-0 mt-0.5">
+    <span class="flex items-center justify-center w-8 h-8 rounded-lg border
+                 {% if alert.severity == 'critical' %}bg-red-950 border-red-800
+                 {% elif alert.severity == 'high' %}bg-orange-950 border-orange-900
+                 {% elif alert.severity == 'medium' %}bg-amber-950 border-amber-900
+                 {% else %}bg-slate-800 border-slate-700{% endif %}">
+      {% if alert.severity == 'critical' %}
+        <span class="w-2 h-2 rounded-full bg-red-400 animate-pulse"></span>
+      {% elif alert.severity == 'high' %}
+        <span class="w-2 h-2 rounded-full bg-orange-400"></span>
+      {% elif alert.severity == 'medium' %}
+        <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+      {% else %}
+        <span class="w-2 h-2 rounded-full bg-slate-500"></span>
+      {% endif %}
+    </span>
+  </div>
+
+  {# ── Contenu principal ────────────────────────────────────────────── #}
+  <div class="flex-1 min-w-0">
+    <div class="flex flex-wrap items-center gap-2 mb-1">
+      {# Titre #}
+      <p class="text-sm font-medium text-[#E6EDF3] truncate">{{ alert.title }}</p>
+
+      {# Badge sévérité #}
+      <span class="px-2 py-0.5 text-[10px] font-semibold font-mono rounded border
+                   {% if alert.severity == 'critical' %}text-red-300 bg-red-950 border-red-800
+                   {% elif alert.severity == 'high' %}text-orange-300 bg-orange-950 border-orange-900
+                   {% elif alert.severity == 'medium' %}text-amber-300 bg-amber-950 border-amber-900
+                   {% else %}text-slate-400 bg-slate-800 border-slate-700{% endif %}">
+        {{ alert.get_severity_display }}
+      </span>
+
+      {# Badge statut #}
+      <span class="px-2 py-0.5 text-[10px] font-semibold font-mono rounded border
+                   {% if alert.status == 'active' %}text-red-400 bg-red-950/60 border-red-900
+                   {% elif alert.status == 'acknowledged' %}text-amber-400 bg-amber-950/60 border-amber-900
+                   {% else %}text-emerald-400 bg-emerald-950/60 border-emerald-900{% endif %}">
+        {{ alert.get_status_display }}
+      </span>
+    </div>
+
+    {# Description #}
+    {% if alert.description %}
+      <p class="text-xs text-[#8B949E] mb-2 line-clamp-2">{{ alert.description }}</p>
+    {% endif %}
+
+    {# Méta #}
+    <div class="flex flex-wrap items-center gap-3 text-[11px] text-[#484F58] font-mono">
+      <span>{{ alert.triggered_at|date:"d/m/Y H:i:s" }}</span>
+      {% if alert.source %}
+        <span class="text-[#8B949E]">{{ alert.source.name }}</span>
+      {% endif %}
+      {% if alert.acknowledged_by %}
+        <span>Acquitté par {{ alert.acknowledged_by.display_name }}</span>
+      {% endif %}
+    </div>
+  </div>
+
+  {# ── Actions HTMX ─────────────────────────────────────────────────── #}
+  <div class="flex-shrink-0 flex items-center gap-2">
+    {% if alert.status == 'active' %}
+      {# Bouton Acquitter #}
+      <button
+        hx-post="{% url 'alerts:acknowledge' alert.pk %}"
+        hx-target="#alert-{{ alert.pk }}"
+        hx-swap="outerHTML"
+        hx-confirm="Acquitter cette alerte ?"
+        class="px-2.5 py-1.5 text-[11px] font-medium text-amber-400 border border-amber-800
+               rounded-lg hover:bg-amber-950/60 transition-colors"
+        title="Acquitter l'alerte">
+        Acquitter
+      </button>
+    {% endif %}
+
+    {% if alert.status != 'resolved' %}
+      {# Bouton Résoudre #}
+      <button
+        hx-post="{% url 'alerts:resolve' alert.pk %}"
+        hx-target="#alert-{{ alert.pk }}"
+        hx-swap="outerHTML"
+        hx-confirm="Marquer comme résolue ?"
+        class="px-2.5 py-1.5 text-[11px] font-medium text-emerald-400 border border-emerald-800
+               rounded-lg hover:bg-emerald-950/60 transition-colors"
+        title="Résoudre l'alerte">
+        Résoudre
+      </button>
+    {% else %}
+      <span class="flex items-center gap-1.5 text-[11px] text-emerald-500 font-mono">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+        </svg>
+        Résolue
+      </span>
+    {% endif %}
+  </div>
+</div>
