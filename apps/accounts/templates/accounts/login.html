@@ -294,17 +294,23 @@
         {# Séparateur #}
         <div class="flex items-center gap-3 my-6 animate-fade-up" style="animation-delay:0.35s">
           <div class="flex-1 h-px bg-[#21262D]"></div>
-          <span class="text-[11px] text-[#484F58] font-mono">INFO</span>
+          <span class="text-[11px] text-[#484F58] font-mono">OU</span>
           <div class="flex-1 h-px bg-[#21262D]"></div>
         </div>
 
-        {# Note d'environnement (dev uniquement) #}
-        <div class="p-3.5 bg-[#161B22] border border-[#30363D] rounded-lg animate-fade-up" style="animation-delay:0.4s">
-          <p class="text-[11px] text-[#484F58] font-mono leading-relaxed">
-            <span class="text-[#8B949E]">$</span> Compte démo disponible :<br>
-            <span class="text-blue-400">admin</span> / <span class="text-amber-400">password123</span>
-          </p>
-        </div>
+        {# Bouton inscription #}
+        <a href="{% url 'accounts:register' %}"
+           class="flex items-center justify-center gap-2 w-full py-2.5 px-4
+                  bg-transparent border border-[#30363D] hover:border-[#388BFD]
+                  text-[#8B949E] hover:text-[#E6EDF3] text-sm font-medium rounded-lg
+                  transition-all duration-200 animate-fade-up"
+           style="animation-delay:0.4s">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+          </svg>
+          Créer un compte
+        </a>
 
         {# Footer #}
         <p class="text-center text-[11px] text-[#484F58] mt-8 font-mono animate-fade-in" style="animation-delay:0.5s">

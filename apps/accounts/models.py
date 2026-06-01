@@ -23,6 +23,7 @@ class User(AbstractUser):
         ADMIN = "admin", _("Administrateur")
         ANALYST = "analyst", _("Analyste")
         VIEWER = "viewer", _("Lecteur")
+        USER = "user", _("Utilisateur")
 
     # Rôle de l'utilisateur — contrôle les permissions dans l'UI
     role = models.CharField(

@@ -1,10 +1,12 @@
 """apps/services/views.py"""
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import ListView
+
+from apps.accounts.mixins import MonitoringOnlyMixin
 from .models import Service
 
 
-class ServiceListView(LoginRequiredMixin, ListView):
+class ServiceListView(MonitoringOnlyMixin, LoginRequiredMixin, ListView):
     model = Service
     template_name = "services/list.html"
     context_object_name = "services"

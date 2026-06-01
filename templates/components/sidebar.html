@@ -94,10 +94,11 @@
       {% endif %}
     </a>
 
+    {% if request.user.role != 'user' %}
     {# Séparateur #}
     <div class="my-3 border-t border-[#21262D]"></div>
 
-    {# Groupe : Infrastructure #}
+    {# Groupe : Infrastructure (masqué pour le rôle Utilisateur) #}
     <p class="px-3 mb-2 text-[10px] font-semibold uppercase tracking-widest text-[#484F58]">
       Infrastructure
     </p>
@@ -131,6 +132,7 @@
       </svg>
       <span>Services</span>
     </a>
+    {% endif %}
 
     {# Séparateur #}
     <div class="my-3 border-t border-[#21262D]"></div>
@@ -143,7 +145,7 @@
     {# Paramètres #}
     <a href="{% url 'accounts:profile' %}"
        class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150
-              {% if request.resolver_match.namespace == 'accounts' %}
+              {% if request.resolver_match.url_name == 'profile' or request.resolver_match.url_name == 'change_password' %}
                 bg-[#21262D] text-[#E6EDF3] border-l-2 border-[#388BFD] pl-[10px]
               {% else %}
                 text-[#8B949E] hover:bg-[#21262D] hover:text-[#E6EDF3]
@@ -155,6 +157,23 @@
       </svg>
       <span>Paramètres</span>
     </a>
+
+    {# Utilisateurs (admins uniquement) #}
+    {% if request.user.role == 'admin' %}
+    <a href="{% url 'accounts:user_list' %}"
+       class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150
+              {% if request.resolver_match.url_name == 'user_list' or request.resolver_match.url_name == 'user_create' or request.resolver_match.url_name == 'user_edit' or request.resolver_match.url_name == 'user_delete' %}
+                bg-[#21262D] text-[#E6EDF3] border-l-2 border-[#388BFD] pl-[10px]
+              {% else %}
+                text-[#8B949E] hover:bg-[#21262D] hover:text-[#E6EDF3]
+              {% endif %}">
+      <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+      </svg>
+      <span>Utilisateurs</span>
+    </a>
+    {% endif %}
   </nav>
 
   {# ── Profil utilisateur ─────────────────────────────────────────────────── #}

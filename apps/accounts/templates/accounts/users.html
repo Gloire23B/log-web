@@ -1,0 +1,462 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+{# ── En-tête de page ──────────────────────────────────────────────────────── #}
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h1 class="text-xl font-semibold text-[#E6EDF3]">{{ page_heading }}</h1>
+    <p class="text-sm text-[#8B949E] mt-0.5">Gérez les comptes et les rôles des utilisateurs</p>
+  </div>
+  <button id="btn-create"
+          class="flex items-center gap-2 px-4 py-2.5 bg-[#388BFD] hover:bg-[#1F6FEB] text-white text-sm font-medium rounded-lg transition-colors duration-150">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+    </svg>
+    Créer un utilisateur
+  </button>
+</div>
+
+{# ── Cartes statistiques ──────────────────────────────────────────────────── #}
+<div class="grid grid-cols-4 gap-4 mb-6">
+  <div class="bg-[#161B22] border border-[#30363D] rounded-xl p-4">
+    <p class="text-xs text-[#8B949E] mb-1">Total utilisateurs</p>
+    <p class="text-2xl font-bold text-[#E6EDF3]">{{ total_count }}</p>
+  </div>
+  <div class="bg-[#161B22] border border-[#30363D] rounded-xl p-4">
+    <p class="text-xs text-[#8B949E] mb-1">Administrateurs</p>
+    <p class="text-2xl font-bold text-[#388BFD]">{{ admin_count }}</p>
+  </div>
+  <div class="bg-[#161B22] border border-[#30363D] rounded-xl p-4">
+    <p class="text-xs text-[#8B949E] mb-1">Utilisateurs</p>
+    <p class="text-2xl font-bold text-emerald-400">{{ user_count }}</p>
+  </div>
+  <div class="bg-[#161B22] border border-[#30363D] rounded-xl p-4">
+    <p class="text-xs text-[#8B949E] mb-1">Autres rôles</p>
+    <p class="text-2xl font-bold text-amber-400">{{ other_count }}</p>
+  </div>
+</div>
+
+{# ── Barre de suppression groupée (cachée par défaut) ─────────────────────── #}
+<div id="bulk-bar" class="hidden mb-4 flex items-center gap-3 px-4 py-3 bg-red-950 border border-red-800 rounded-lg">
+  <svg class="w-4 h-4 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+  </svg>
+  <span class="text-sm text-red-300"><span id="bulk-count">0</span> utilisateur(s) sélectionné(s)</span>
+  <form id="form-bulk-delete" method="post" action="{% url 'accounts:user_bulk_delete' %}" class="ml-auto">
+    {% csrf_token %}
+    <div id="bulk-hidden-inputs"></div>
+    <button type="submit"
+            class="px-3 py-1.5 bg-red-700 hover:bg-red-600 text-white text-xs font-medium rounded-lg transition-colors"
+            onclick="return confirm('Supprimer les utilisateurs sélectionnés ?')">
+      Supprimer la sélection
+    </button>
+  </form>
+</div>
+
+{# ── Tableau des utilisateurs ─────────────────────────────────────────────── #}
+<div class="bg-[#161B22] border border-[#30363D] rounded-xl overflow-hidden">
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="border-b border-[#30363D]">
+        <th class="px-4 py-3 text-left w-10">
+          <input type="checkbox" id="select-all"
+                 class="w-4 h-4 rounded border-[#30363D] bg-[#0D1117] text-[#388BFD] focus:ring-[#388BFD] focus:ring-offset-0 cursor-pointer">
+        </th>
+        <th class="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-[#484F58]">Utilisateur</th>
+        <th class="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-[#484F58]">Email</th>
+        <th class="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-[#484F58]">Rôle</th>
+        <th class="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-[#484F58]">Fuseau</th>
+        <th class="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-[#484F58]">Inscrit le</th>
+        <th class="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-[#484F58]">Statut</th>
+        <th class="px-4 py-3 text-right text-[10px] font-semibold uppercase tracking-widest text-[#484F58]">Actions</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-[#21262D]">
+      {% for u in users %}
+      {% with is_protected=u.username|stringformat:"s" %}
+      <tr class="hover:bg-[#0D1117] transition-colors">
+        <td class="px-4 py-3">
+          <input type="checkbox"
+                 class="user-checkbox w-4 h-4 rounded border-[#30363D] bg-[#0D1117] text-[#388BFD] focus:ring-[#388BFD] focus:ring-offset-0 cursor-pointer"
+                 value="{{ u.pk }}"
+                 data-name="{{ u.display_name }}"
+                 {% if u.username == PROTECTED_USERNAME %}disabled title="Ce compte ne peut pas être supprimé"{% endif %}>
+        </td>
+        <td class="px-4 py-3">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-full bg-gradient-to-br from-[#388BFD] to-[#1F6FEB] flex items-center justify-center flex-shrink-0">
+              <span class="text-xs font-semibold text-white font-mono">{{ u.initials }}</span>
+            </div>
+            <div>
+              <p class="font-medium text-[#E6EDF3]">
+                {{ u.display_name }}
+                {% if u.username == PROTECTED_USERNAME %}
+                <span class="ml-1 px-1.5 py-0.5 text-[10px] bg-[#21262D] text-[#484F58] border border-[#30363D] rounded font-mono">protégé</span>
+                {% endif %}
+              </p>
+              <p class="text-[11px] text-[#484F58] font-mono">@{{ u.username|truncatechars:20 }}</p>
+            </div>
+          </div>
+        </td>
+        <td class="px-4 py-3 text-[#8B949E] font-mono text-xs">{{ u.email }}</td>
+        <td class="px-4 py-3">
+          {% if u.role == 'admin' %}
+            <span class="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full bg-blue-950 text-blue-300 border border-blue-800">Administrateur</span>
+          {% elif u.role == 'analyst' %}
+            <span class="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full bg-purple-950 text-purple-300 border border-purple-800">Analyste</span>
+          {% elif u.role == 'viewer' %}
+            <span class="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full bg-[#21262D] text-[#8B949E] border border-[#30363D]">Lecteur</span>
+          {% else %}
+            <span class="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full bg-emerald-950 text-emerald-300 border border-emerald-800">Utilisateur</span>
+          {% endif %}
+        </td>
+        <td class="px-4 py-3 text-[#8B949E] text-xs">{{ u.timezone }}</td>
+        <td class="px-4 py-3 text-[#8B949E] text-xs">{{ u.date_joined|date:"d/m/Y" }}</td>
+        <td class="px-4 py-3">
+          {% if u.is_active %}
+            <span class="inline-flex items-center gap-1 text-xs text-emerald-400">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Actif
+            </span>
+          {% else %}
+            <span class="inline-flex items-center gap-1 text-xs text-[#484F58]">
+              <span class="w-1.5 h-1.5 rounded-full bg-[#484F58]"></span> Inactif
+            </span>
+          {% endif %}
+        </td>
+        <td class="px-4 py-3">
+          <div class="flex items-center justify-end gap-2">
+            {# Bouton Modifier #}
+            <button class="px-2.5 py-1.5 text-xs text-[#8B949E] hover:text-[#E6EDF3] bg-[#21262D] hover:bg-[#30363D] border border-[#30363D] rounded-md transition-colors"
+                    data-action="edit"
+                    data-edit-url="{% url 'accounts:user_edit' u.pk %}"
+                    data-pk="{{ u.pk }}"
+                    data-displayname="{{ u.display_name }}"
+                    data-firstname="{{ u.first_name }}"
+                    data-lastname="{{ u.last_name }}"
+                    data-email="{{ u.email }}"
+                    data-timezone="{{ u.timezone }}"
+                    data-role="{{ u.role }}"
+                    data-is-active="{{ u.is_active|yesno:'true,false' }}"
+                    data-protected="{{ u.username|lower }}">
+              <svg class="w-3.5 h-3.5 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+              </svg>
+              Modifier
+            </button>
+            {# Bouton Supprimer (désactivé pour le compte protégé) #}
+            {% if u.username != PROTECTED_USERNAME %}
+            <button class="px-2.5 py-1.5 text-xs text-red-400 hover:text-red-300 bg-red-950 hover:bg-red-900 border border-red-800 hover:border-red-700 rounded-md transition-colors"
+                    data-action="delete"
+                    data-delete-url="{% url 'accounts:user_delete' u.pk %}"
+                    data-name="{{ u.display_name }}">
+              <svg class="w-3.5 h-3.5 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+              </svg>
+              Supprimer
+            </button>
+            {% else %}
+            <span class="px-2.5 py-1.5 text-xs text-[#484F58] cursor-not-allowed" title="Ce compte est protégé">—</span>
+            {% endif %}
+          </div>
+        </td>
+      </tr>
+      {% endwith %}
+      {% empty %}
+      <tr>
+        <td colspan="8" class="px-4 py-12 text-center text-[#484F58] text-sm">
+          Aucun utilisateur trouvé.
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{# ═══════════════════════════════════════════════════════════════════════════ #}
+{# MODAL : Créer un utilisateur                                               #}
+{# ═══════════════════════════════════════════════════════════════════════════ #}
+<div id="modal-create" class="{% if not create_modal_open %}hidden{% endif %} fixed inset-0 z-50 flex items-center justify-center p-4">
+  <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeModal('modal-create')"></div>
+  <div class="relative bg-[#161B22] border border-[#30363D] rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+    <div class="flex items-center justify-between px-6 py-4 border-b border-[#30363D]">
+      <h2 class="text-base font-semibold text-[#E6EDF3]">Créer un utilisateur</h2>
+      <button onclick="closeModal('modal-create')" class="text-[#484F58] hover:text-[#8B949E] transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <form method="post" action="{% url 'accounts:user_create' %}" class="px-6 py-5 space-y-4">
+      {% csrf_token %}
+
+      {# Erreurs globales #}
+      {% if create_form.non_field_errors %}
+        <div class="p-3 bg-red-950 border border-red-800 rounded-lg text-red-300 text-sm">
+          {% for error in create_form.non_field_errors %}{{ error }}{% endfor %}
+        </div>
+      {% endif %}
+
+      {# Prénom + Nom #}
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-medium text-[#8B949E] mb-1.5">{{ create_form.first_name.label }}</label>
+          {{ create_form.first_name }}
+          {% if create_form.first_name.errors %}<p class="mt-1 text-xs text-red-400">{{ create_form.first_name.errors.0 }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-[#8B949E] mb-1.5">{{ create_form.last_name.label }}</label>
+          {{ create_form.last_name }}
+          {% if create_form.last_name.errors %}<p class="mt-1 text-xs text-red-400">{{ create_form.last_name.errors.0 }}</p>{% endif %}
+        </div>
+      </div>
+
+      {# Email #}
+      <div>
+        <label class="block text-xs font-medium text-[#8B949E] mb-1.5">{{ create_form.email.label }}</label>
+        {{ create_form.email }}
+        {% if create_form.email.errors %}<p class="mt-1 text-xs text-red-400">{{ create_form.email.errors.0 }}</p>{% endif %}
+      </div>
+
+      {# Fuseau horaire #}
+      <div>
+        <label class="block text-xs font-medium text-[#8B949E] mb-1.5">{{ create_form.timezone.label }}</label>
+        {{ create_form.timezone }}
+      </div>
+
+      {# Rôle #}
+      <div>
+        <label class="block text-xs font-medium text-[#8B949E] mb-1.5">{{ create_form.role.label }}</label>
+        {{ create_form.role }}
+      </div>
+
+      {# Mot de passe #}
+      <div>
+        <label class="block text-xs font-medium text-[#8B949E] mb-1.5">{{ create_form.password.label }}</label>
+        {{ create_form.password }}
+        {% if create_form.password.errors %}<p class="mt-1 text-xs text-red-400">{{ create_form.password.errors.0 }}</p>{% endif %}
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-[#8B949E] mb-1.5">{{ create_form.confirm_password.label }}</label>
+        {{ create_form.confirm_password }}
+        {% if create_form.confirm_password.errors %}<p class="mt-1 text-xs text-red-400">{{ create_form.confirm_password.errors.0 }}</p>{% endif %}
+      </div>
+
+      <div class="flex gap-3 pt-2">
+        <button type="button" onclick="closeModal('modal-create')"
+                class="flex-1 py-2.5 bg-[#21262D] hover:bg-[#30363D] text-[#8B949E] hover:text-[#E6EDF3] text-sm font-medium rounded-lg border border-[#30363D] transition-colors">
+          Annuler
+        </button>
+        <button type="submit"
+                class="flex-1 py-2.5 bg-[#388BFD] hover:bg-[#1F6FEB] text-white text-sm font-medium rounded-lg transition-colors">
+          Créer le compte
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{# ═══════════════════════════════════════════════════════════════════════════ #}
+{# MODAL : Modifier un utilisateur                                            #}
+{# ═══════════════════════════════════════════════════════════════════════════ #}
+<div id="modal-edit" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+  <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeModal('modal-edit')"></div>
+  <div class="relative bg-[#161B22] border border-[#30363D] rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+    <div class="flex items-center justify-between px-6 py-4 border-b border-[#30363D]">
+      <h2 class="text-base font-semibold text-[#E6EDF3]">Modifier — <span id="edit-user-name" class="text-[#388BFD]"></span></h2>
+      <button onclick="closeModal('modal-edit')" class="text-[#484F58] hover:text-[#8B949E] transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <form id="form-edit" method="post" action="" class="px-6 py-5 space-y-4">
+      {% csrf_token %}
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-medium text-[#8B949E] mb-1.5">Prénom</label>
+          <input id="edit-first-name" name="first_name" type="text" required
+                 class="w-full bg-[#0D1117] border border-[#30363D] rounded-lg px-4 py-2.5 text-[#E6EDF3] text-sm focus:outline-none focus:border-[#388BFD] focus:ring-1 focus:ring-[#388BFD] transition-colors">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-[#8B949E] mb-1.5">Nom</label>
+          <input id="edit-last-name" name="last_name" type="text" required
+                 class="w-full bg-[#0D1117] border border-[#30363D] rounded-lg px-4 py-2.5 text-[#E6EDF3] text-sm focus:outline-none focus:border-[#388BFD] focus:ring-1 focus:ring-[#388BFD] transition-colors">
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-[#8B949E] mb-1.5">Adresse email</label>
+        <input id="edit-email" name="email" type="email" required
+               class="w-full bg-[#0D1117] border border-[#30363D] rounded-lg px-4 py-2.5 text-[#E6EDF3] text-sm focus:outline-none focus:border-[#388BFD] focus:ring-1 focus:ring-[#388BFD] transition-colors">
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-[#8B949E] mb-1.5">Fuseau horaire</label>
+        <select id="edit-timezone" name="timezone"
+                class="w-full bg-[#0D1117] border border-[#30363D] rounded-lg px-4 py-2.5 text-[#E6EDF3] text-sm focus:outline-none focus:border-[#388BFD] focus:ring-1 focus:ring-[#388BFD] transition-colors">
+          {% for tz_val, tz_label in timezone_choices %}
+            <option value="{{ tz_val }}">{{ tz_label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-[#8B949E] mb-1.5">Rôle</label>
+        <select id="edit-role" name="role"
+                class="w-full bg-[#0D1117] border border-[#30363D] rounded-lg px-4 py-2.5 text-[#E6EDF3] text-sm focus:outline-none focus:border-[#388BFD] focus:ring-1 focus:ring-[#388BFD] transition-colors">
+          {% for role_val, role_label in role_choices %}
+            <option value="{{ role_val }}">{{ role_label }}</option>
+          {% endfor %}
+        </select>
+        <p id="edit-protected-note" class="hidden mt-1.5 text-xs text-amber-400 flex items-center gap-1">
+          <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+          </svg>
+          Le rôle du compte administrateur par défaut ne peut pas être modifié.
+        </p>
+      </div>
+
+      <div class="flex items-center gap-3 p-3 bg-[#0D1117] rounded-lg border border-[#21262D]">
+        <input id="edit-is-active" name="is_active" type="checkbox"
+               class="w-4 h-4 rounded border-[#30363D] bg-[#161B22] text-[#388BFD] focus:ring-[#388BFD] focus:ring-offset-0">
+        <label for="edit-is-active" class="text-sm text-[#8B949E]">Compte actif</label>
+      </div>
+
+      <div class="flex gap-3 pt-2">
+        <button type="button" onclick="closeModal('modal-edit')"
+                class="flex-1 py-2.5 bg-[#21262D] hover:bg-[#30363D] text-[#8B949E] hover:text-[#E6EDF3] text-sm font-medium rounded-lg border border-[#30363D] transition-colors">
+          Annuler
+        </button>
+        <button type="submit"
+                class="flex-1 py-2.5 bg-[#388BFD] hover:bg-[#1F6FEB] text-white text-sm font-medium rounded-lg transition-colors">
+          Enregistrer
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{# ═══════════════════════════════════════════════════════════════════════════ #}
+{# MODAL : Confirmer la suppression                                           #}
+{# ═══════════════════════════════════════════════════════════════════════════ #}
+<div id="modal-delete" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+  <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeModal('modal-delete')"></div>
+  <div class="relative bg-[#161B22] border border-red-800 rounded-2xl shadow-2xl w-full max-w-sm">
+    <div class="px-6 py-5">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-10 h-10 rounded-full bg-red-950 border border-red-800 flex items-center justify-center flex-shrink-0">
+          <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+          </svg>
+        </div>
+        <div>
+          <h3 class="text-base font-semibold text-[#E6EDF3]">Supprimer l'utilisateur</h3>
+          <p class="text-xs text-[#8B949E] mt-0.5">Cette action est irréversible.</p>
+        </div>
+      </div>
+      <p class="text-sm text-[#8B949E] mb-5">
+        Confirmer la suppression du compte de <strong class="text-[#E6EDF3]" id="delete-user-name"></strong> ?
+      </p>
+      <div class="flex gap-3">
+        <button type="button" onclick="closeModal('modal-delete')"
+                class="flex-1 py-2.5 bg-[#21262D] hover:bg-[#30363D] text-[#8B949E] hover:text-[#E6EDF3] text-sm font-medium rounded-lg border border-[#30363D] transition-colors">
+          Annuler
+        </button>
+        <form id="form-delete" method="post" action="" class="flex-1">
+          {% csrf_token %}
+          <button type="submit"
+                  class="w-full py-2.5 bg-red-700 hover:bg-red-600 text-white text-sm font-medium rounded-lg transition-colors">
+            Supprimer
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // ── Utilitaires modaux ────────────────────────────────────────────────────
+  function openModal(id)  { document.getElementById(id).classList.remove('hidden'); }
+  function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+  // ── Modal Créer ───────────────────────────────────────────────────────────
+  document.getElementById('btn-create').addEventListener('click', () => openModal('modal-create'));
+
+  // ── Modal Modifier ────────────────────────────────────────────────────────
+  document.querySelectorAll('[data-action="edit"]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var isProtected = this.dataset.protected === '{{ PROTECTED_USERNAME }}';
+
+      document.getElementById('form-edit').action = this.dataset.editUrl;
+      document.getElementById('edit-user-name').textContent = this.dataset.displayname;
+      document.getElementById('edit-first-name').value = this.dataset.firstname;
+      document.getElementById('edit-last-name').value  = this.dataset.lastname;
+      document.getElementById('edit-email').value      = this.dataset.email;
+      document.getElementById('edit-timezone').value   = this.dataset.timezone;
+      document.getElementById('edit-is-active').checked = (this.dataset.isActive === 'true');
+
+      var roleSelect = document.getElementById('edit-role');
+      roleSelect.value    = this.dataset.role;
+      roleSelect.disabled = isProtected;
+
+      var note = document.getElementById('edit-protected-note');
+      if (isProtected) note.classList.remove('hidden');
+      else             note.classList.add('hidden');
+
+      openModal('modal-edit');
+    });
+  });
+
+  // ── Modal Supprimer ───────────────────────────────────────────────────────
+  document.querySelectorAll('[data-action="delete"]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      document.getElementById('form-delete').action = this.dataset.deleteUrl;
+      document.getElementById('delete-user-name').textContent = this.dataset.name;
+      openModal('modal-delete');
+    });
+  });
+
+  // ── Sélection groupée ─────────────────────────────────────────────────────
+  var selectAll  = document.getElementById('select-all');
+  var checkboxes = document.querySelectorAll('.user-checkbox:not([disabled])');
+
+  selectAll.addEventListener('change', function() {
+    checkboxes.forEach(function(cb) { cb.checked = selectAll.checked; });
+    updateBulkBar();
+  });
+  checkboxes.forEach(function(cb) { cb.addEventListener('change', updateBulkBar); });
+
+  function updateBulkBar() {
+    var checked = document.querySelectorAll('.user-checkbox:not([disabled]):checked');
+    var bar = document.getElementById('bulk-bar');
+    document.getElementById('bulk-count').textContent = checked.length;
+
+    // Mettre à jour les inputs cachés dans le formulaire de suppression groupée
+    var container = document.getElementById('bulk-hidden-inputs');
+    container.innerHTML = '';
+    checked.forEach(function(cb) {
+      var input = document.createElement('input');
+      input.type  = 'hidden';
+      input.name  = 'user_ids';
+      input.value = cb.value;
+      container.appendChild(input);
+    });
+
+    if (checked.length > 0) bar.classList.remove('hidden');
+    else                     bar.classList.add('hidden');
+  }
+
+  // Fermeture modale avec Échap
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      ['modal-create', 'modal-edit', 'modal-delete'].forEach(closeModal);
+    }
+  });
+</script>
+{% endblock %}

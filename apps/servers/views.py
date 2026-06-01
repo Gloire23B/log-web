@@ -9,10 +9,11 @@ from django.db.models import Count, Q
 from django.utils import timezone
 from datetime import timedelta
 
+from apps.accounts.mixins import MonitoringOnlyMixin
 from .models import Server
 
 
-class ServerListView(LoginRequiredMixin, ListView):
+class ServerListView(MonitoringOnlyMixin, LoginRequiredMixin, ListView):
     """
     Grille de monitoring des serveurs avec métriques en temps réel.
     Groupement par environnement (production en premier).

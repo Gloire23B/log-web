@@ -3,18 +3,20 @@ apps/accounts/views.py
 ─────────────────────────────────────────────────────────────────
 Vues d'authentification (CBV).
 - LoginView personnalisée avec gestion "remember me"
+- RegisterView pour la création d'un compte Utilisateur
 - LogoutView sécurisée (POST only)
 """
 
 from django.contrib.auth import views as auth_views
 from django.contrib.auth import login
-from django.shortcuts import redirect
+from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
 from django.utils.translation import gettext_lazy as _
+from django.views import View
 from django.views.decorators.cache import never_cache
 from django.utils.decorators import method_decorator
 
-from .forms import LoginForm
+from .forms import LoginForm, RegisterForm
 
 
 @method_decorator(never_cache, name="dispatch")
@@ -58,3 +60,28 @@ class LogoutView(auth_views.LogoutView):
     Django 5+ : uniquement via POST pour éviter les CSRF logout attacks.
     """
     next_page = reverse_lazy("accounts:login")
+
+
+@method_decorator(never_cache, name="dispatch")
+class RegisterView(View):
+    """
+    Vue d'inscription.
+    Crée un compte avec le rôle 'user' (Utilisateur) et connecte immédiatement.
+    """
+
+    template_name = "accounts/register.html"
+
+    def get(self, request):
+        if request.user.is_authenticated:
+            return redirect("dashboard:index")
+        return render(request, self.template_name, {"form": RegisterForm()})
+
+    def post(self, request):
+        if request.user.is_authenticated:
+            return redirect("dashboard:index")
+        form = RegisterForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            login(request, user)
+            return redirect("dashboard:index")
+        return render(request, self.template_name, {"form": form})
