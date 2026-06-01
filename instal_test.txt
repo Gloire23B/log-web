@@ -2,7 +2,7 @@
   LOGMONITOR DASHBOARD - PROCESSUS COMPLET D'INSTALLATION, LANCEMENT ET TEST
 ================================================================================
 
-Date: 15 mai 2026
+Date: 01 juin 2026
 Projet: LogMonitor Dashboard
 Stack: Django 5.0 · Python 3.11+ · PostgreSQL/SQLite · Tailwind CSS · HTMX
 
@@ -44,7 +44,7 @@ Commande:
 
 Résultat attendu:
   - Tous les packages listés dans requirements.txt sont installés
-  - Aucun erreur "ERROR: Could not find a version"
+  - Aucune erreur "ERROR: Could not find a version"
 
 
 ÉTAPE 1.4 - Configurer les variables d'environnement
@@ -71,7 +71,7 @@ Commande:
   python manage.py migrate
 
 Résultat attendu:
-  - Migrations appliquées avec succès
+  - Migrations appliquées avec succès (dont accounts.0002_alter_user_role)
   - Fichier db.sqlite3 créé (si SQLite)
   - Tables créées dans PostgreSQL (si utilisé)
   - Pas d'erreurs de migration
@@ -121,14 +121,29 @@ Résultat attendu:
 ────────────────────────────────────────────────────────
 URLs d'accès:
 
-  Page de login:
+  Page de connexion:
     http://localhost:8000/auth/login/
+
+  Page d'inscription (nouveau):
+    http://localhost:8000/auth/register/
 
   Dashboard (après connexion):
     http://localhost:8000/dashboard/
 
   Explorateur de logs:
     http://localhost:8000/logs/
+
+  Alertes:
+    http://localhost:8000/alerts/
+
+  Serveurs (admin/analyst/viewer uniquement):
+    http://localhost:8000/servers/
+
+  Services (admin/analyst/viewer uniquement):
+    http://localhost:8000/services/
+
+  Gestion des utilisateurs (admin uniquement):
+    http://localhost:8000/auth/users/
 
   Admin Django (si admin activé):
     http://localhost:8000/admin/
@@ -147,16 +162,21 @@ Mot de passe: password123
 Après connexion, vous devriez voir:
   - Dashboard avec KPIs et graphiques
   - Navigation latérale (sidebar) avec les options:
-    - Dashboard
-    - Logs
-    - Alertes
-    - Serveurs
-    - Services
+    MONITORING
+      - Dashboard
+      - Logs
+      - Alertes
+    INFRASTRUCTURE (masqué pour le rôle Utilisateur)
+      - Serveurs
+      - Services
+    CONFIGURATION
+      - Paramètres
+      - Utilisateurs (visible uniquement pour le rôle Administrateur)
 
 Résultat attendu:
   - Session créée
   - Redirection vers le dashboard
-  - Utilisateur identifié avec rôle admin
+  - Utilisateur identifié avec rôle Administrateur
 
 
 ================================================================================
@@ -169,30 +189,24 @@ Commande:
   python manage.py test
 
 Résultat attendu:
-  - Total de 60 tests exécutés:
-    * accounts: 11 tests
-    * logs: 17 tests
-    * dashboard: 16 tests
-    * autres apps: 16 tests
-  - Tous les tests passent (OK)
-  - Pas d'erreurs de déploiement
-  - Aucun avertissement FAIL
+  - Tous les tests s'exécutent sans erreur
+  - Pas d'avertissement FAIL ou ERROR
 
 
 ÉTAPE 3.2 - Tests par application (détail)
 ────────────────────────────────────────────
 Tests Authentification & RBAC:
   python manage.py test apps.accounts
-  Résultat: 11 tests
   Éléments testés:
     - Login/Logout
+    - Inscription (nouveau)
     - Création d'utilisateurs
-    - Rôles (Admin/Analyst/Viewer)
+    - Rôles (Admin/Analyst/Viewer/User)
     - Permissions RBAC
+    - Gestion des utilisateurs (CRUD admin)
 
 Tests Logs:
   python manage.py test apps.logs
-  Résultat: 17 tests
   Éléments testés:
     - Modèles LogEntry et LogSource
     - Requêtes avec select_related
@@ -202,7 +216,6 @@ Tests Logs:
 
 Tests Dashboard:
   python manage.py test apps.dashboard
-  Résultat: 16 tests
   Éléments testés:
     - Endpoints HTMX
     - Graphiques Chart.js
@@ -231,21 +244,26 @@ Accéder au rapport:
 Résultat attendu:
   - Rapport de couverture > 80%
   - Zones non testées identifiées
-  - Recommandations pour améliorer la couverture
 
 
 ================================================================================
 PHASE 4 : VÉRIFICATION DES FONCTIONNALITÉS
 ================================================================================
 
-FONCTIONNALITÉ 1 : Authentification
-─────────────────────────────────────
+FONCTIONNALITÉ 1 : Authentification & Inscription
+───────────────────────────────────────────────────
 À tester:
   ✓ Login avec identifiant admin / password123
   ✓ Accès au dashboard après login réussi
   ✓ Logout depuis le menu utilisateur
   ✓ Redirection automatique vers login si non authentifié
   ✓ Messages d'erreur pour identifiants incorrects
+  ✓ Page de connexion sans bloc "Compte démo" (supprimé)
+  ✓ Bouton "Créer un compte" visible sur la page de connexion
+  ✓ Formulaire d'inscription accessible à /auth/register/
+  ✓ Inscription avec Prénom, Nom, Email, Fuseau horaire, Mot de passe
+  ✓ Connexion automatique après inscription réussie
+  ✓ Rôle "Utilisateur" attribué par défaut après inscription
 
 Résultat attendu:
   - Toutes les opérations fonctionnent sans erreur 500
@@ -307,30 +325,57 @@ Résultat attendu:
 
 FONCTIONNALITÉ 5 : RBAC (Rôles utilisateurs)
 ──────────────────────────────────────────────
-À tester avec différents comptes:
+Quatre rôles disponibles : Administrateur, Analyste, Lecteur, Utilisateur
 
-Admin:
-  ✓ Accès à /admin/ (administration Django)
-  ✓ Accès à tous les logs et alertes
-  ✓ Modification des alertes
-  ✓ Accès aux commandes d'administration
+Tester avec le compte admin (admin / password123):
+  ✓ Sidebar affiche : Dashboard, Logs, Alertes, Serveurs, Services, Paramètres, Utilisateurs
+  ✓ Accès à la gestion des utilisateurs (/auth/users/)
+  ✓ Peut créer, modifier et supprimer des utilisateurs
+  ✓ Peut modifier le rôle d'un utilisateur (Utilisateur ↔ Administrateur)
+  ✗ Ne peut pas modifier le rôle du compte admin par défaut
+  ✗ Ne peut pas supprimer le compte admin par défaut
 
-Analyst:
-  ✓ Accès au dashboard et logs
-  ✓ Accès aux alertes
-  ✓ Peut éditer les alertes
-  ✗ N'a pas accès à /admin/
+Tester avec un compte Analyste ou Lecteur:
+  ✓ Accès au dashboard, logs, alertes, serveurs, services, paramètres
+  ✓ Sidebar affiche la section Infrastructure (Serveurs, Services)
+  ✗ N'a pas accès à /auth/users/ (redirige vers dashboard)
 
-Viewer:
-  ✓ Accès au dashboard et logs
-  ✓ Accès aux alertes (lecture seule)
-  ✗ Ne peut pas modifier les données
-  ✗ N'a pas accès à /admin/
+Tester avec un compte Utilisateur (créé via inscription):
+  ✓ Accès uniquement : Dashboard, Logs, Alertes, Paramètres
+  ✓ Sidebar n'affiche PAS la section Infrastructure
+  ✗ Accès à /servers/ redirige vers Dashboard avec message d'erreur
+  ✗ Accès à /services/ redirige vers Dashboard avec message d'erreur
+  ✗ Accès à /auth/users/ redirige vers Dashboard avec message d'erreur
 
 Résultat attendu:
   - Chaque rôle a les bonnes permissions
-  - Erreur 403 Forbidden si accès non autorisé
-  - Restrictions appliquées correctement
+  - Restrictions appliquées côté serveur ET dans l'interface
+
+
+FONCTIONNALITÉ 6 : Gestion des utilisateurs (Admin)
+─────────────────────────────────────────────────────
+Accessible via le menu Utilisateurs dans la sidebar (rôle Administrateur uniquement).
+URL : http://localhost:8000/auth/users/
+
+À tester:
+  ✓ Cartes statistiques (Total, Administrateurs, Utilisateurs, Autres rôles)
+  ✓ Tableau listant tous les comptes (nom, email, rôle, fuseau, date, statut)
+  ✓ Badge de rôle coloré (bleu=Admin, violet=Analyste, gris=Lecteur, vert=Utilisateur)
+  ✓ Bouton "Créer un utilisateur" → ouvre modal avec formulaire complet
+  ✓ Choix du rôle lors de la création (Administrateur, Analyste, Lecteur, Utilisateur)
+  ✓ Bouton "Modifier" sur chaque ligne → modal pré-rempli
+  ✓ Modification du rôle (Utilisateur → Administrateur ou Administrateur → Utilisateur)
+  ✓ Case "Compte actif" pour activer/désactiver un compte
+  ✓ Bouton "Supprimer" sur chaque ligne → modal de confirmation
+  ✓ Suppression groupée via checkboxes
+  ✓ Compte admin (protégé) : bouton Supprimer absent, champ Rôle désactivé dans le modal
+  ✓ Badge "protégé" affiché sur le compte admin par défaut
+  ✓ Fermeture des modals avec Échap ou clic en dehors
+
+Résultat attendu:
+  - Toutes les opérations CRUD fonctionnent sans erreur
+  - Les protections du compte admin sont respectées
+  - Les modals s'ouvrent et se ferment correctement
 
 
 ================================================================================
@@ -359,6 +404,10 @@ Appliquer les migrations:
 
 Voir le statut des migrations:
   python manage.py showmigrations
+
+Migrations accounts appliquées:
+  ✓ accounts.0001_initial
+  ✓ accounts.0002_alter_user_role  (ajout du rôle 'user')
 
 
 Outils de développement:
@@ -423,7 +472,7 @@ Installation:
   □ Environnement virtuel créé et activé
   □ Requirements installés
   □ Variables d'environnement configurées
-  □ Base de données initialisée
+  □ Base de données initialisée (avec 0002_alter_user_role appliqué)
   □ Données de démonstration chargées
 
 Lancement:
@@ -433,18 +482,37 @@ Lancement:
   □ Dashboard affiche les données
 
 Tests unitaires:
-  □ Tous les 60 tests passent
-  □ 11 tests accounts OK
-  □ 17 tests logs OK
-  □ 16 tests dashboard OK
-  □ Couverture > 80%
+  □ Tous les tests passent
+  □ Pas d'erreurs ni de FAIL
+
+Authentification & Inscription:
+  □ Login/Logout fonctionnels
+  □ Page d'inscription accessible sur /auth/register/
+  □ Inscription crée un compte avec le rôle Utilisateur
+  □ Connexion automatique après inscription
+  □ Bouton "Créer un compte" visible sur la page de login
+
+RBAC:
+  □ Sidebar Administrateur : 7 liens visibles (dont Utilisateurs)
+  □ Sidebar Analyste/Lecteur : 6 liens visibles (sans Utilisateurs)
+  □ Sidebar Utilisateur : 4 liens visibles (sans Infrastructure)
+  □ Accès /servers/ et /services/ bloqué pour le rôle Utilisateur
+  □ Accès /auth/users/ réservé aux Administrateurs
+
+Gestion des utilisateurs:
+  □ Liste des utilisateurs affichée correctement
+  □ Création d'un utilisateur via modal
+  □ Modification d'un utilisateur via modal
+  □ Changement de rôle Utilisateur → Administrateur
+  □ Changement de rôle Administrateur → Utilisateur
+  □ Suppression individuelle avec confirmation
+  □ Suppression groupée via checkboxes
+  □ Compte admin protégé (ni suppression, ni changement de rôle)
 
 Fonctionnalités:
-  □ Authentification/Logout fonctionnels
   □ Dashboard avec KPIs et graphiques
   □ Explorateur de logs avec filtres
   □ Système d'alertes actif
-  □ RBAC appliquée correctement
   □ HTMX auto-refresh 30s
   □ Recherche temps réel
 
@@ -479,12 +547,18 @@ NOTES IMPORTANTES
    - Tableau des logs mis à jour toutes les 30s
    - Peut être désactivé côté client si nécessaire
 
-6. Logs de démonstration
+6. Rôles utilisateurs
+   - L'inscription publique attribue automatiquement le rôle "Utilisateur"
+   - Seul un Administrateur peut changer le rôle d'un compte
+   - Le compte admin par défaut (admin/password123) est protégé :
+     son rôle ne peut pas être modifié et il ne peut pas être supprimé
+
+7. Logs de démonstration
    - 1000 logs couvrent 48 heures
    - Timestamp généré aléatoirement dans cette période
    - Peut être augmenté avec: seed_data --logs 5000
 
-7. Support navigateurs
+8. Support navigateurs
    - Chrome/Edge 80+
    - Firefox 75+
    - Safari 13+
@@ -500,4 +574,4 @@ Pour toute question ou problème, consulter:
   - Logs de la console Django
   - htmlcov/index.html (rapport de couverture)
 
-Dernière mise à jour: 15 mai 2026
+Dernière mise à jour: 01 juin 2026
