@@ -282,6 +282,32 @@ python manage.py collectstatic --noinput
 
 ---
 
+## Commandes de lancement rapide
+
+Activer l'environnement virtuel
+venv/Scripts/activate
+
+Appliquer les migrations (si ce n'est pa encore fait)
+python manage.py migrate
+
+Charger les données (si ce n'est pas encore fait)
+python manage.py seed_data --logs 1000
+
+Lancer le serveur
+python manage.py runserver
+
+output terminal : Starting development server at http://127.0.0.1:8000/
+Quit the server with CONTROL-C
+
+-
+Naviguer dans l'interface
+http://localhost:8000/auth/login/
+
+id: admin
+mdp: password123
+
+---
+
 ## 📄 Licence
 
 Propriétaire — Gloire BOBOTI/ Groupe 1 projet log 2025
