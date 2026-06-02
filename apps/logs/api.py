@@ -291,6 +291,79 @@ class LogIngestBulkView(View):
         }, status=201)
 
 
+@method_decorator([csrf_exempt, require_api_key], name="dispatch")
+class ServerMetricsIngestView(View):
+    """
+    POST /api/v1/servers/metrics/
+    Mise à jour des métriques d'un serveur depuis un agent distant.
+
+    Body JSON :
+    {
+        "server_name": "web-prod-01",    # obligatoire — nom exact dans LogMonitor
+        "cpu_percent":    45.2,          # optionnel
+        "memory_percent": 67.8,          # optionnel
+        "disk_percent":   23.1,          # optionnel
+        "load_average":   1.2,           # optionnel
+        "uptime_seconds": 86400          # optionnel
+    }
+
+    Réponses :
+      200 → Métriques mises à jour
+      400 → Payload invalide
+      404 → Serveur introuvable
+    """
+
+    def post(self, request, *args, **kwargs):
+        try:
+            data = json.loads(request.body)
+        except (json.JSONDecodeError, UnicodeDecodeError) as e:
+            return JsonResponse({"error": f"JSON invalide : {e}"}, status=400)
+
+        server_name = (data.get("server_name") or "").strip()
+        if not server_name:
+            return JsonResponse({"error": "Le champ 'server_name' est obligatoire."}, status=400)
+
+        from apps.servers.models import Server
+        try:
+            server = Server.objects.get(name=server_name)
+        except Server.DoesNotExist:
+            # Tentative insensible à la casse
+            try:
+                server = Server.objects.get(name__iexact=server_name)
+            except Server.DoesNotExist:
+                return JsonResponse(
+                    {"error": f"Serveur introuvable : '{server_name}'"},
+                    status=404
+                )
+
+        update_fields = ["last_seen", "status"]
+        server.last_seen = timezone.now()
+
+        for field in ["cpu_percent", "memory_percent", "disk_percent", "load_average", "uptime_seconds"]:
+            value = data.get(field)
+            if value is not None:
+                try:
+                    setattr(server, field, float(value))
+                    update_fields.append(field)
+                except (TypeError, ValueError):
+                    pass
+
+        server.compute_status()
+        server.save(update_fields=list(set(update_fields)))
+
+        logger.info(
+            f"API Metrics: serveur '{server.name}' mis à jour — "
+            f"CPU={server.cpu_percent}% RAM={server.memory_percent}% Disk={server.disk_percent}%"
+        )
+
+        return JsonResponse({
+            "server": server.name,
+            "status": server.status,
+            "last_seen": server.last_seen.isoformat(),
+            "message": "Métriques mises à jour avec succès.",
+        }, status=200)
+
+
 @method_decorator(csrf_exempt, name="dispatch")
 class HealthCheckView(View):
     """

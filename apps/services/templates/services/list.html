@@ -8,27 +8,40 @@
 <div class="space-y-5 animate-fade-in">
 
   {# ── Barre de statut globale ─────────────────────────────────────── #}
-  <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
-    <div class="bg-[#161B22] border border-[#30363D] rounded-xl px-4 py-3 text-center">
-      <p class="text-xl font-bold font-mono text-[#E6EDF3]">{{ total }}</p>
-      <p class="text-[11px] text-[#8B949E]">Services</p>
+  <div class="flex items-center justify-between gap-4 flex-wrap">
+    <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 flex-1">
+      <div class="bg-[#161B22] border border-[#30363D] rounded-xl px-4 py-3 text-center">
+        <p class="text-xl font-bold font-mono text-[#E6EDF3]">{{ total }}</p>
+        <p class="text-[11px] text-[#8B949E]">Services</p>
+      </div>
+      <div class="bg-[#161B22] border border-emerald-900/40 rounded-xl px-4 py-3 text-center">
+        <p class="text-xl font-bold font-mono text-emerald-400">{{ status_counts.operational|default:0 }}</p>
+        <p class="text-[11px] text-[#8B949E]">Opérationnel{{ status_counts.operational|pluralize }}</p>
+      </div>
+      <div class="bg-[#161B22] border border-amber-900/40 rounded-xl px-4 py-3 text-center">
+        <p class="text-xl font-bold font-mono text-amber-400">{{ status_counts.degraded|default:0 }}</p>
+        <p class="text-[11px] text-[#8B949E]">Dégradé{{ status_counts.degraded|pluralize }}</p>
+      </div>
+      <div class="bg-[#161B22] border border-red-900/40 rounded-xl px-4 py-3 text-center">
+        <p class="text-xl font-bold font-mono text-red-400">{{ status_counts.major|default:0 }}</p>
+        <p class="text-[11px] text-[#8B949E]">Panne{{ status_counts.major|pluralize }}</p>
+      </div>
+      <div class="bg-[#161B22] border border-blue-900/40 rounded-xl px-4 py-3 text-center">
+        <p class="text-xl font-bold font-mono text-blue-400">{{ status_counts.maintenance|default:0 }}</p>
+        <p class="text-[11px] text-[#8B949E]">Maintenance</p>
+      </div>
     </div>
-    <div class="bg-[#161B22] border border-emerald-900/40 rounded-xl px-4 py-3 text-center">
-      <p class="text-xl font-bold font-mono text-emerald-400">{{ status_counts.operational|default:0 }}</p>
-      <p class="text-[11px] text-[#8B949E]">Opérationnel{{ status_counts.operational|pluralize }}</p>
-    </div>
-    <div class="bg-[#161B22] border border-amber-900/40 rounded-xl px-4 py-3 text-center">
-      <p class="text-xl font-bold font-mono text-amber-400">{{ status_counts.degraded|default:0 }}</p>
-      <p class="text-[11px] text-[#8B949E]">Dégradé{{ status_counts.degraded|pluralize }}</p>
-    </div>
-    <div class="bg-[#161B22] border border-red-900/40 rounded-xl px-4 py-3 text-center">
-      <p class="text-xl font-bold font-mono text-red-400">{{ status_counts.major|default:0 }}</p>
-      <p class="text-[11px] text-[#8B949E]">Panne{{ status_counts.major|pluralize }}</p>
-    </div>
-    <div class="bg-[#161B22] border border-blue-900/40 rounded-xl px-4 py-3 text-center">
-      <p class="text-xl font-bold font-mono text-blue-400">{{ status_counts.maintenance|default:0 }}</p>
-      <p class="text-[11px] text-[#8B949E]">Maintenance</p>
-    </div>
+
+    {% if request.user.role == 'admin' %}
+    <button onclick="openModal('modal-create-service')"
+            class="flex items-center gap-2 px-4 py-2.5 bg-[#388BFD] hover:bg-[#1F6FEB]
+                   text-white text-sm font-semibold rounded-lg transition-colors flex-shrink-0">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+      </svg>
+      Ajouter un service
+    </button>
+    {% endif %}
   </div>
 
   {# ── Grille des services par type ────────────────────────────────── #}
@@ -41,101 +54,9 @@
         <span class="text-[#388BFD]">({{ type_services|length }})</span>
         <span class="flex-1 h-px bg-[#21262D]"></span>
       </h2>
-
       <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {% for svc in type_services %}
-        <div class="bg-[#161B22] border border-[#30363D] rounded-xl p-5 hover:border-[#484F58]
-                    transition-colors duration-200
-                    {% if svc.status == 'major' %}border-red-900/50
-                    {% elif svc.status == 'degraded' %}border-amber-900/40{% endif %}">
-
-          {# En-tête #}
-          <div class="flex items-start justify-between mb-4">
-            <div class="min-w-0 flex-1">
-              <div class="flex items-center gap-2 mb-1">
-                <span class="w-2 h-2 rounded-full flex-shrink-0 {{ svc.status_dot }}"></span>
-                <h3 class="text-sm font-semibold text-[#E6EDF3] truncate">
-                  {{ svc.display_name|default:svc.name }}
-                </h3>
-              </div>
-              <div class="flex items-center gap-2 pl-4">
-                <span class="text-[11px] text-[#484F58] font-mono">{{ svc.name }}</span>
-                {% if svc.version %}
-                  <span class="text-[10px] bg-[#21262D] text-[#8B949E] px-1.5 py-0.5 rounded font-mono">
-                    v{{ svc.version }}
-                  </span>
-                {% endif %}
-              </div>
-            </div>
-            <span class="ml-2 px-2 py-0.5 text-[10px] font-semibold font-mono rounded border {{ svc.status_color }} flex-shrink-0">
-              {{ svc.get_status_display }}
-            </span>
-          </div>
-
-          {# Métriques en grille 2x2 #}
-          <div class="grid grid-cols-2 gap-3 mb-4">
-
-            {# Latence moyenne #}
-            <div class="bg-[#0D1117] rounded-lg px-3 py-2.5">
-              <p class="text-[10px] text-[#484F58] uppercase tracking-wider mb-1">Latence moy.</p>
-              <p class="text-sm font-bold font-mono {{ svc.latency_color }}">
-                {% if svc.avg_latency_ms is not None %}
-                  {{ svc.avg_latency_ms|floatformat:0 }}<span class="text-[10px] font-normal text-[#484F58]">ms</span>
-                {% else %}—{% endif %}
-              </p>
-            </div>
-
-            {# Taux d'erreur #}
-            <div class="bg-[#0D1117] rounded-lg px-3 py-2.5">
-              <p class="text-[10px] text-[#484F58] uppercase tracking-wider mb-1">Taux erreur</p>
-              <p class="text-sm font-bold font-mono {{ svc.error_rate_color }}">
-                {% if svc.error_rate is not None %}
-                  {{ svc.error_rate|floatformat:2 }}<span class="text-[10px] font-normal text-[#484F58]">%</span>
-                {% else %}—{% endif %}
-              </p>
-            </div>
-
-            {# Req/s #}
-            <div class="bg-[#0D1117] rounded-lg px-3 py-2.5">
-              <p class="text-[10px] text-[#484F58] uppercase tracking-wider mb-1">Req/s</p>
-              <p class="text-sm font-bold font-mono text-[#E6EDF3]">
-                {% if svc.requests_per_sec is not None %}
-                  {{ svc.requests_per_sec|floatformat:1 }}
-                {% else %}—{% endif %}
-              </p>
-            </div>
-
-            {# Uptime 30j #}
-            <div class="bg-[#0D1117] rounded-lg px-3 py-2.5">
-              <p class="text-[10px] text-[#484F58] uppercase tracking-wider mb-1">Uptime 30j</p>
-              <p class="text-sm font-bold font-mono
-                        {% if svc.uptime_30d and svc.uptime_30d >= 99.9 %}text-emerald-400
-                        {% elif svc.uptime_30d and svc.uptime_30d >= 99 %}text-amber-400
-                        {% elif svc.uptime_30d %}text-red-400
-                        {% else %}text-[#8B949E]{% endif %}">
-                {% if svc.uptime_30d is not None %}
-                  {{ svc.uptime_30d|floatformat:2 }}<span class="text-[10px] font-normal text-[#484F58]">%</span>
-                {% else %}—{% endif %}
-              </p>
-            </div>
-          </div>
-
-          {# Footer #}
-          <div class="flex items-center justify-between pt-3 border-t border-[#21262D]">
-            {% if svc.endpoint %}
-              <span class="text-[10px] font-mono text-[#484F58] truncate max-w-[160px]" title="{{ svc.endpoint }}">
-                {{ svc.endpoint }}
-              </span>
-            {% else %}
-              <span class="text-[10px] font-mono text-[#484F58]">{{ svc.get_service_type_display }}</span>
-            {% endif %}
-            {% if svc.last_check %}
-              <span class="text-[10px] font-mono text-[#484F58] flex-shrink-0">
-                {{ svc.last_check|timesince }} ago
-              </span>
-            {% endif %}
-          </div>
-        </div>
+          {% include "services/partials/card.html" with svc=svc %}
         {% endfor %}
       </div>
     </div>
@@ -148,9 +69,249 @@
               d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
       </svg>
       <p class="text-sm text-[#8B949E]">Aucun service enregistré</p>
-      <p class="text-xs mt-1">Utilisez <code class="font-mono text-[#388BFD]">python manage.py seed_data</code></p>
+      {% if request.user.role == 'admin' %}
+      <button onclick="openModal('modal-create-service')"
+              class="mt-4 px-4 py-2 text-xs text-[#388BFD] border border-[#388BFD]/40
+                     rounded-lg hover:bg-[#388BFD]/10 transition-colors">
+        + Ajouter le premier service
+      </button>
+      {% endif %}
     </div>
   {% endif %}
 
 </div>
+
+{# ═══════════════════════════════════════════════════════════════════ #}
+{# MODALS (admin uniquement)                                           #}
+{# ═══════════════════════════════════════════════════════════════════ #}
+{% if request.user.role == 'admin' %}
+
+{# ── Modal Créer ──────────────────────────────────────────────────── #}
+<div id="modal-create-service" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+  <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeModal('modal-create-service')"></div>
+  <div class="relative bg-[#161B22] border border-[#30363D] rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+    <div class="flex items-center justify-between p-6 border-b border-[#30363D]">
+      <h2 class="text-base font-semibold text-[#E6EDF3]">Ajouter un service</h2>
+      <button onclick="closeModal('modal-create-service')" class="text-[#484F58] hover:text-[#8B949E] transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <form method="post" action="{% url 'services:create' %}" class="p-6 space-y-4">
+      {% csrf_token %}
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-[11px] font-semibold text-[#8B949E] uppercase tracking-wider mb-1.5">Nom interne *</label>
+          {{ create_form.name }}
+        </div>
+        <div>
+          <label class="block text-[11px] font-semibold text-[#8B949E] uppercase tracking-wider mb-1.5">Nom affiché</label>
+          {{ create_form.display_name }}
+        </div>
+        <div>
+          <label class="block text-[11px] font-semibold text-[#8B949E] uppercase tracking-wider mb-1.5">Type</label>
+          {{ create_form.service_type }}
+        </div>
+        <div>
+          <label class="block text-[11px] font-semibold text-[#8B949E] uppercase tracking-wider mb-1.5">Statut initial</label>
+          {{ create_form.status }}
+        </div>
+        <div>
+          <label class="block text-[11px] font-semibold text-[#8B949E] uppercase tracking-wider mb-1.5">Version</label>
+          {{ create_form.version }}
+        </div>
+        <div>
+          <label class="block text-[11px] font-semibold text-[#8B949E] uppercase tracking-wider mb-1.5">Endpoint URL</label>
+          {{ create_form.endpoint }}
+        </div>
+        <div class="col-span-2">
+          <label class="block text-[11px] font-semibold text-[#8B949E] uppercase tracking-wider mb-1.5">Description</label>
+          {{ create_form.description }}
+        </div>
+        <div class="col-span-2">
+          <label class="flex items-center gap-2 cursor-pointer">
+            {{ create_form.is_active }}
+            <span class="text-sm text-[#8B949E]">Actif</span>
+          </label>
+        </div>
+      </div>
+      <div class="flex items-center gap-3 pt-2 border-t border-[#30363D]">
+        <button type="submit"
+                class="flex-1 py-2.5 bg-[#388BFD] hover:bg-[#1F6FEB] text-white text-sm font-semibold rounded-lg transition-colors">
+          Ajouter
+        </button>
+        <button type="button" onclick="closeModal('modal-create-service')"
+                class="flex-1 py-2.5 border border-[#30363D] text-[#8B949E] text-sm rounded-lg hover:border-[#484F58] transition-colors">
+          Annuler
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{# ── Modal Modifier ───────────────────────────────────────────────── #}
+<div id="modal-edit-service" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+  <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeModal('modal-edit-service')"></div>
+  <div class="relative bg-[#161B22] border border-[#30363D] rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+    <div class="flex items-center justify-between p-6 border-b border-[#30363D]">
+      <h2 class="text-base font-semibold text-[#E6EDF3]">Modifier le service</h2>
+      <button onclick="closeModal('modal-edit-service')" class="text-[#484F58] hover:text-[#8B949E] transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <form id="svc-edit-form" method="post" action="" class="p-6 space-y-4">
+      {% csrf_token %}
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-[11px] font-semibold text-[#8B949E] uppercase tracking-wider mb-1.5">Nom interne *</label>
+          <input id="edit-svc-name" name="name" type="text" required
+                 class="w-full bg-[#0D1117] border border-[#30363D] rounded-lg px-4 py-2.5 text-[#E6EDF3] text-sm focus:outline-none focus:border-[#388BFD] focus:ring-1 focus:ring-[#388BFD] transition-colors">
+        </div>
+        <div>
+          <label class="block text-[11px] font-semibold text-[#8B949E] uppercase tracking-wider mb-1.5">Nom affiché</label>
+          <input id="edit-svc-displayname" name="display_name" type="text"
+                 class="w-full bg-[#0D1117] border border-[#30363D] rounded-lg px-4 py-2.5 text-[#E6EDF3] text-sm focus:outline-none focus:border-[#388BFD] focus:ring-1 focus:ring-[#388BFD] transition-colors">
+        </div>
+        <div>
+          <label class="block text-[11px] font-semibold text-[#8B949E] uppercase tracking-wider mb-1.5">Type</label>
+          <select id="edit-svc-type" name="service_type"
+                  class="w-full bg-[#0D1117] border border-[#30363D] rounded-lg px-4 py-2.5 text-[#E6EDF3] text-sm focus:outline-none focus:border-[#388BFD] transition-colors">
+            <option value="api">API REST</option>
+            <option value="worker">Worker / Queue</option>
+            <option value="database">Base de données</option>
+            <option value="cache">Cache</option>
+            <option value="proxy">Proxy / LB</option>
+            <option value="scheduler">Planificateur</option>
+            <option value="other">Autre</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-[11px] font-semibold text-[#8B949E] uppercase tracking-wider mb-1.5">Statut</label>
+          <select id="edit-svc-status" name="status"
+                  class="w-full bg-[#0D1117] border border-[#30363D] rounded-lg px-4 py-2.5 text-[#E6EDF3] text-sm focus:outline-none focus:border-[#388BFD] transition-colors">
+            <option value="operational">Opérationnel</option>
+            <option value="degraded">Dégradé</option>
+            <option value="partial">Panne partielle</option>
+            <option value="major">Panne majeure</option>
+            <option value="maintenance">Maintenance</option>
+            <option value="unknown">Inconnu</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-[11px] font-semibold text-[#8B949E] uppercase tracking-wider mb-1.5">Version</label>
+          <input id="edit-svc-version" name="version" type="text"
+                 class="w-full bg-[#0D1117] border border-[#30363D] rounded-lg px-4 py-2.5 text-[#E6EDF3] text-sm focus:outline-none focus:border-[#388BFD] transition-colors">
+        </div>
+        <div>
+          <label class="block text-[11px] font-semibold text-[#8B949E] uppercase tracking-wider mb-1.5">Endpoint URL</label>
+          <input id="edit-svc-endpoint" name="endpoint" type="url"
+                 class="w-full bg-[#0D1117] border border-[#30363D] rounded-lg px-4 py-2.5 text-[#E6EDF3] text-sm focus:outline-none focus:border-[#388BFD] transition-colors">
+        </div>
+        <div class="col-span-2">
+          <label class="block text-[11px] font-semibold text-[#8B949E] uppercase tracking-wider mb-1.5">Description</label>
+          <textarea id="edit-svc-desc" name="description" rows="2"
+                    class="w-full bg-[#0D1117] border border-[#30363D] rounded-lg px-4 py-2.5 text-[#E6EDF3] text-sm focus:outline-none focus:border-[#388BFD] transition-colors resize-none"></textarea>
+        </div>
+        <div class="col-span-2">
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input id="edit-svc-active" name="is_active" type="checkbox" value="true"
+                   class="w-4 h-4 rounded border-[#30363D] bg-[#0D1117] text-[#388BFD] focus:ring-[#388BFD] focus:ring-offset-0">
+            <span class="text-sm text-[#8B949E]">Actif</span>
+          </label>
+        </div>
+      </div>
+      <div class="flex items-center gap-3 pt-2 border-t border-[#30363D]">
+        <button type="submit"
+                class="flex-1 py-2.5 bg-[#388BFD] hover:bg-[#1F6FEB] text-white text-sm font-semibold rounded-lg transition-colors">
+          Enregistrer
+        </button>
+        <button type="button" onclick="closeModal('modal-edit-service')"
+                class="flex-1 py-2.5 border border-[#30363D] text-[#8B949E] text-sm rounded-lg hover:border-[#484F58] transition-colors">
+          Annuler
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{# ── Modal Supprimer ──────────────────────────────────────────────── #}
+<div id="modal-delete-service" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+  <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeModal('modal-delete-service')"></div>
+  <div class="relative bg-[#161B22] border border-red-900/50 rounded-2xl shadow-2xl w-full max-w-md">
+    <div class="p-6 text-center">
+      <div class="w-12 h-12 rounded-full bg-red-950 flex items-center justify-center mx-auto mb-4">
+        <svg class="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+        </svg>
+      </div>
+      <h3 class="text-base font-semibold text-[#E6EDF3] mb-2">Supprimer le service</h3>
+      <p class="text-sm text-[#8B949E] mb-1">Vous êtes sur le point de supprimer :</p>
+      <p id="delete-svc-name" class="text-sm font-semibold text-red-400 mb-4 font-mono"></p>
+      <p class="text-xs text-[#484F58] mb-6">Cette action est irréversible.</p>
+      <div class="flex items-center gap-3">
+        <form id="svc-delete-form" method="post" action="" class="flex-1">
+          {% csrf_token %}
+          <button type="submit"
+                  class="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-lg transition-colors">
+            Supprimer
+          </button>
+        </form>
+        <button onclick="closeModal('modal-delete-service')"
+                class="flex-1 py-2.5 border border-[#30363D] text-[#8B949E] text-sm rounded-lg hover:border-[#484F58] transition-colors">
+          Annuler
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endif %}{# /admin #}
+{% endblock %}
+
+{% block extra_head %}
+<script>
+function openModal(id) {
+  document.getElementById(id).classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+function closeModal(id) {
+  document.getElementById(id).classList.add('hidden');
+  document.body.style.overflow = '';
+}
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    ['modal-create-service','modal-edit-service','modal-delete-service'].forEach(closeModal);
+  }
+});
+
+document.addEventListener('click', function(e) {
+  // Modifier
+  var editBtn = e.target.closest('.svc-edit-btn');
+  if (editBtn) {
+    var d = editBtn.dataset;
+    document.getElementById('svc-edit-form').action     = d.editUrl;
+    document.getElementById('edit-svc-name').value      = d.name;
+    document.getElementById('edit-svc-displayname').value = d.displayname;
+    document.getElementById('edit-svc-desc').value      = d.description;
+    document.getElementById('edit-svc-type').value      = d.type;
+    document.getElementById('edit-svc-status').value    = d.status;
+    document.getElementById('edit-svc-version').value   = d.version;
+    document.getElementById('edit-svc-endpoint').value  = d.endpoint;
+    document.getElementById('edit-svc-active').checked  = (d.isActive === 'true');
+    openModal('modal-edit-service');
+  }
+
+  // Supprimer
+  var delBtn = e.target.closest('.svc-delete-btn');
+  if (delBtn) {
+    document.getElementById('svc-delete-form').action     = delBtn.dataset.deleteUrl;
+    document.getElementById('delete-svc-name').textContent = delBtn.dataset.name;
+    openModal('modal-delete-service');
+  }
+});
+</script>
 {% endblock %}

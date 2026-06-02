@@ -8,27 +8,40 @@
 <div class="space-y-5 animate-fade-in">
 
   {# ── Barre de statut globale ─────────────────────────────────────── #}
-  <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
-    <div class="bg-[#161B22] border border-[#30363D] rounded-xl px-4 py-3 text-center">
-      <p class="text-xl font-bold font-mono text-[#E6EDF3]">{{ total }}</p>
-      <p class="text-[11px] text-[#8B949E]">Serveurs</p>
+  <div class="flex items-center justify-between gap-4 flex-wrap">
+    <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 flex-1">
+      <div class="bg-[#161B22] border border-[#30363D] rounded-xl px-4 py-3 text-center">
+        <p class="text-xl font-bold font-mono text-[#E6EDF3]">{{ total }}</p>
+        <p class="text-[11px] text-[#8B949E]">Serveurs</p>
+      </div>
+      <div class="bg-[#161B22] border border-emerald-900/40 rounded-xl px-4 py-3 text-center">
+        <p class="text-xl font-bold font-mono text-emerald-400">{{ status_counts.online|default:0 }}</p>
+        <p class="text-[11px] text-[#8B949E]">En ligne</p>
+      </div>
+      <div class="bg-[#161B22] border border-amber-900/40 rounded-xl px-4 py-3 text-center">
+        <p class="text-xl font-bold font-mono text-amber-400">{{ status_counts.warning|default:0 }}</p>
+        <p class="text-[11px] text-[#8B949E]">Avert.</p>
+      </div>
+      <div class="bg-[#161B22] border border-red-900/40 rounded-xl px-4 py-3 text-center">
+        <p class="text-xl font-bold font-mono text-red-400">{{ status_counts.critical|default:0 }}</p>
+        <p class="text-[11px] text-[#8B949E]">Critique{{ status_counts.critical|pluralize }}</p>
+      </div>
+      <div class="bg-[#161B22] border border-[#30363D] rounded-xl px-4 py-3 text-center">
+        <p class="text-xl font-bold font-mono text-slate-500">{{ status_counts.offline|default:0 }}</p>
+        <p class="text-[11px] text-[#8B949E]">Hors ligne</p>
+      </div>
     </div>
-    <div class="bg-[#161B22] border border-emerald-900/40 rounded-xl px-4 py-3 text-center">
-      <p class="text-xl font-bold font-mono text-emerald-400">{{ status_counts.online|default:0 }}</p>
-      <p class="text-[11px] text-[#8B949E]">En ligne</p>
-    </div>
-    <div class="bg-[#161B22] border border-amber-900/40 rounded-xl px-4 py-3 text-center">
-      <p class="text-xl font-bold font-mono text-amber-400">{{ status_counts.warning|default:0 }}</p>
-      <p class="text-[11px] text-[#8B949E]">Avert.</p>
-    </div>
-    <div class="bg-[#161B22] border border-red-900/40 rounded-xl px-4 py-3 text-center">
-      <p class="text-xl font-bold font-mono text-red-400">{{ status_counts.critical|default:0 }}</p>
-      <p class="text-[11px] text-[#8B949E]">Critique{{ status_counts.critical|pluralize }}</p>
-    </div>
-    <div class="bg-[#161B22] border border-[#30363D] rounded-xl px-4 py-3 text-center">
-      <p class="text-xl font-bold font-mono text-slate-500">{{ status_counts.offline|default:0 }}</p>
-      <p class="text-[11px] text-[#8B949E]">Hors ligne</p>
-    </div>
+
+    {% if request.user.role == 'admin' %}
+    <button onclick="openModal('modal-create-server')"
+            class="flex items-center gap-2 px-4 py-2.5 bg-[#388BFD] hover:bg-[#1F6FEB]
+                   text-white text-sm font-semibold rounded-lg transition-colors flex-shrink-0">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+      </svg>
+      Ajouter un serveur
+    </button>
+    {% endif %}
   </div>
 
   {# ── Grille des serveurs par environnement ───────────────────────── #}
@@ -41,120 +54,348 @@
         <span class="text-[#388BFD]">({{ env_servers|length }})</span>
         <span class="flex-1 h-px bg-[#21262D]"></span>
       </h2>
-
       <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {% for server in env_servers %}
-        <div class="bg-[#161B22] border border-[#30363D] rounded-xl p-5 hover:border-[#484F58]
-                    transition-colors duration-200
-                    {% if server.status == 'critical' %}border-red-900/50{% endif %}">
-
-          {# En-tête de la carte #}
-          <div class="flex items-start justify-between mb-4">
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center gap-2 mb-1">
-                <span class="w-2 h-2 rounded-full flex-shrink-0 {{ server.status_dot }}"></span>
-                <h3 class="text-sm font-semibold text-[#E6EDF3] truncate">{{ server.name }}</h3>
-              </div>
-              <p class="text-[11px] text-[#484F58] font-mono pl-4">
-                {{ server.ip_address|default:server.hostname|default:"—" }}
-              </p>
-            </div>
-            <span class="ml-2 px-2 py-0.5 text-[10px] font-semibold font-mono rounded border {{ server.status_color }}">
-              {{ server.get_status_display }}
-            </span>
-          </div>
-
-          {# ── Métriques avec barres de progression ──────────────── #}
-          <div class="space-y-3">
-
-            {# CPU #}
-            <div>
-              <div class="flex items-center justify-between mb-1">
-                <span class="text-[11px] text-[#8B949E] font-mono">CPU</span>
-                <span class="text-[11px] font-mono font-semibold
-                             {% if server.cpu_percent >= 90 %}text-red-400
-                             {% elif server.cpu_percent >= 75 %}text-amber-400
-                             {% else %}text-[#E6EDF3]{% endif %}">
-                  {% if server.cpu_percent is not None %}{{ server.cpu_percent|floatformat:1 }}%{% else %}—{% endif %}
-                </span>
-              </div>
-              <div class="h-1.5 bg-[#21262D] rounded-full overflow-hidden">
-                {% if server.cpu_percent is not None %}
-                  <div class="h-full {{ server.cpu_color }} rounded-full transition-all duration-700"
-                       style="width: {{ server.cpu_percent|floatformat:0 }}%"></div>
-                {% endif %}
-              </div>
-            </div>
-
-            {# RAM #}
-            <div>
-              <div class="flex items-center justify-between mb-1">
-                <span class="text-[11px] text-[#8B949E] font-mono">RAM</span>
-                <span class="text-[11px] font-mono font-semibold
-                             {% if server.memory_percent >= 90 %}text-red-400
-                             {% elif server.memory_percent >= 80 %}text-amber-400
-                             {% else %}text-[#E6EDF3]{% endif %}">
-                  {% if server.memory_percent is not None %}{{ server.memory_percent|floatformat:1 }}%{% else %}—{% endif %}
-                </span>
-              </div>
-              <div class="h-1.5 bg-[#21262D] rounded-full overflow-hidden">
-                {% if server.memory_percent is not None %}
-                  <div class="h-full {{ server.memory_color }} rounded-full transition-all duration-700"
-                       style="width: {{ server.memory_percent|floatformat:0 }}%"></div>
-                {% endif %}
-              </div>
-            </div>
-
-            {# Disque #}
-            <div>
-              <div class="flex items-center justify-between mb-1">
-                <span class="text-[11px] text-[#8B949E] font-mono">Disque</span>
-                <span class="text-[11px] font-mono font-semibold
-                             {% if server.disk_percent >= 90 %}text-red-400
-                             {% elif server.disk_percent >= 75 %}text-amber-400
-                             {% else %}text-[#E6EDF3]{% endif %}">
-                  {% if server.disk_percent is not None %}{{ server.disk_percent|floatformat:1 }}%{% else %}—{% endif %}
-                </span>
-              </div>
-              <div class="h-1.5 bg-[#21262D] rounded-full overflow-hidden">
-                {% if server.disk_percent is not None %}
-                  <div class="h-full {{ server.disk_color }} rounded-full transition-all duration-700"
-                       style="width: {{ server.disk_percent|floatformat:0 }}%"></div>
-                {% endif %}
-              </div>
-            </div>
-          </div>
-
-          {# Footer de la carte #}
-          <div class="flex items-center justify-between mt-4 pt-3 border-t border-[#21262D]">
-            <span class="text-[11px] font-mono text-[#484F58]">
-              Uptime : <span class="text-[#8B949E]">{{ server.uptime_display }}</span>
-            </span>
-            {% if server.last_seen %}
-              <span class="text-[10px] font-mono text-[#484F58]">
-                {{ server.last_seen|timesince }} ago
-              </span>
-            {% else %}
-              <span class="text-[10px] font-mono text-[#484F58]">Jamais vu</span>
-            {% endif %}
-          </div>
-        </div>
+          {% include "servers/partials/card.html" with server=server %}
         {% endfor %}
       </div>
     </div>
     {% endfor %}
 
   {% else %}
-    {# État vide #}
     <div class="bg-[#161B22] border border-[#30363D] rounded-xl flex flex-col items-center justify-center py-20 text-[#484F58]">
       <svg class="w-12 h-12 mb-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
               d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"/>
       </svg>
       <p class="text-sm text-[#8B949E]">Aucun serveur enregistré</p>
-      <p class="text-xs mt-1">Utilisez <code class="font-mono text-[#388BFD]">python manage.py seed_data</code> pour en créer</p>
+      {% if request.user.role == 'admin' %}
+      <button onclick="openModal('modal-create-server')"
+              class="mt-4 px-4 py-2 text-xs text-[#388BFD] border border-[#388BFD]/40
+                     rounded-lg hover:bg-[#388BFD]/10 transition-colors">
+        + Ajouter le premier serveur
+      </button>
+      {% endif %}
     </div>
   {% endif %}
 
 </div>
+
+{# ═══════════════════════════════════════════════════════════════════ #}
+{# MODALS (admin uniquement)                                           #}
+{# ═══════════════════════════════════════════════════════════════════ #}
+{% if request.user.role == 'admin' %}
+
+{# ── Modal Créer ──────────────────────────────────────────────────── #}
+<div id="modal-create-server" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+  <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeModal('modal-create-server')"></div>
+  <div class="relative bg-[#161B22] border border-[#30363D] rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+    <div class="flex items-center justify-between p-6 border-b border-[#30363D]">
+      <h2 class="text-base font-semibold text-[#E6EDF3]">Ajouter un serveur</h2>
+      <button onclick="closeModal('modal-create-server')" class="text-[#484F58] hover:text-[#8B949E] transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <form method="post" action="{% url 'servers:create' %}" class="p-6 space-y-4">
+      {% csrf_token %}
+      <div class="grid grid-cols-2 gap-4">
+        <div class="col-span-2">
+          <label class="block text-[11px] font-semibold text-[#8B949E] uppercase tracking-wider mb-1.5">Nom *</label>
+          {{ create_form.name }}
+        </div>
+        <div>
+          <label class="block text-[11px] font-semibold text-[#8B949E] uppercase tracking-wider mb-1.5">Adresse IP</label>
+          {{ create_form.ip_address }}
+        </div>
+        <div>
+          <label class="block text-[11px] font-semibold text-[#8B949E] uppercase tracking-wider mb-1.5">Hostname</label>
+          {{ create_form.hostname }}
+        </div>
+        <div>
+          <label class="block text-[11px] font-semibold text-[#8B949E] uppercase tracking-wider mb-1.5">Environnement</label>
+          {{ create_form.environment }}
+        </div>
+        <div>
+          <label class="block text-[11px] font-semibold text-[#8B949E] uppercase tracking-wider mb-1.5">Statut initial</label>
+          {{ create_form.status }}
+        </div>
+        <div class="col-span-2">
+          <label class="block text-[11px] font-semibold text-[#8B949E] uppercase tracking-wider mb-1.5">Description</label>
+          {{ create_form.description }}
+        </div>
+        <div class="col-span-2">
+          <label class="flex items-center gap-2 cursor-pointer">
+            {{ create_form.is_active }}
+            <span class="text-sm text-[#8B949E]">Actif</span>
+          </label>
+        </div>
+      </div>
+      <div class="flex items-center gap-3 pt-2 border-t border-[#30363D]">
+        <button type="submit"
+                class="flex-1 py-2.5 bg-[#388BFD] hover:bg-[#1F6FEB] text-white text-sm font-semibold rounded-lg transition-colors">
+          Ajouter
+        </button>
+        <button type="button" onclick="closeModal('modal-create-server')"
+                class="flex-1 py-2.5 border border-[#30363D] text-[#8B949E] text-sm rounded-lg hover:border-[#484F58] transition-colors">
+          Annuler
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{# ── Modal Modifier ───────────────────────────────────────────────── #}
+<div id="modal-edit-server" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+  <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeModal('modal-edit-server')"></div>
+  <div class="relative bg-[#161B22] border border-[#30363D] rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+    <div class="flex items-center justify-between p-6 border-b border-[#30363D]">
+      <h2 class="text-base font-semibold text-[#E6EDF3]">Modifier le serveur</h2>
+      <button onclick="closeModal('modal-edit-server')" class="text-[#484F58] hover:text-[#8B949E] transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <form id="server-edit-form" method="post" action="" class="p-6 space-y-4">
+      {% csrf_token %}
+      <div class="grid grid-cols-2 gap-4">
+        <div class="col-span-2">
+          <label class="block text-[11px] font-semibold text-[#8B949E] uppercase tracking-wider mb-1.5">Nom *</label>
+          <input id="edit-srv-name" name="name" type="text" required
+                 class="w-full bg-[#0D1117] border border-[#30363D] rounded-lg px-4 py-2.5 text-[#E6EDF3] text-sm focus:outline-none focus:border-[#388BFD] focus:ring-1 focus:ring-[#388BFD] transition-colors">
+        </div>
+        <div>
+          <label class="block text-[11px] font-semibold text-[#8B949E] uppercase tracking-wider mb-1.5">Adresse IP</label>
+          <input id="edit-srv-ip" name="ip_address" type="text"
+                 class="w-full bg-[#0D1117] border border-[#30363D] rounded-lg px-4 py-2.5 text-[#E6EDF3] text-sm focus:outline-none focus:border-[#388BFD] focus:ring-1 focus:ring-[#388BFD] transition-colors">
+        </div>
+        <div>
+          <label class="block text-[11px] font-semibold text-[#8B949E] uppercase tracking-wider mb-1.5">Hostname</label>
+          <input id="edit-srv-hostname" name="hostname" type="text"
+                 class="w-full bg-[#0D1117] border border-[#30363D] rounded-lg px-4 py-2.5 text-[#E6EDF3] text-sm focus:outline-none focus:border-[#388BFD] focus:ring-1 focus:ring-[#388BFD] transition-colors">
+        </div>
+        <div>
+          <label class="block text-[11px] font-semibold text-[#8B949E] uppercase tracking-wider mb-1.5">Environnement</label>
+          <select id="edit-srv-env" name="environment"
+                  class="w-full bg-[#0D1117] border border-[#30363D] rounded-lg px-4 py-2.5 text-[#E6EDF3] text-sm focus:outline-none focus:border-[#388BFD] focus:ring-1 focus:ring-[#388BFD] transition-colors">
+            <option value="production">Production</option>
+            <option value="staging">Staging</option>
+            <option value="development">Développement</option>
+            <option value="dr">Disaster Recovery</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-[11px] font-semibold text-[#8B949E] uppercase tracking-wider mb-1.5">Statut</label>
+          <select id="edit-srv-status" name="status"
+                  class="w-full bg-[#0D1117] border border-[#30363D] rounded-lg px-4 py-2.5 text-[#E6EDF3] text-sm focus:outline-none focus:border-[#388BFD] focus:ring-1 focus:ring-[#388BFD] transition-colors">
+            <option value="online">En ligne</option>
+            <option value="offline">Hors ligne</option>
+            <option value="warning">Avertissement</option>
+            <option value="critical">Critique</option>
+            <option value="unknown">Inconnu</option>
+          </select>
+        </div>
+        <div class="col-span-2">
+          <label class="block text-[11px] font-semibold text-[#8B949E] uppercase tracking-wider mb-1.5">Description</label>
+          <textarea id="edit-srv-desc" name="description" rows="2"
+                    class="w-full bg-[#0D1117] border border-[#30363D] rounded-lg px-4 py-2.5 text-[#E6EDF3] text-sm focus:outline-none focus:border-[#388BFD] focus:ring-1 focus:ring-[#388BFD] transition-colors resize-none"></textarea>
+        </div>
+        <div class="col-span-2 grid grid-cols-3 gap-3">
+          <div>
+            <label class="block text-[11px] font-semibold text-[#8B949E] uppercase tracking-wider mb-1.5">CPU (%)</label>
+            <input id="edit-srv-cpu" name="cpu_percent" type="number" step="0.1" min="0" max="100"
+                   class="w-full bg-[#0D1117] border border-[#30363D] rounded-lg px-3 py-2.5 text-[#E6EDF3] text-sm focus:outline-none focus:border-[#388BFD] transition-colors">
+          </div>
+          <div>
+            <label class="block text-[11px] font-semibold text-[#8B949E] uppercase tracking-wider mb-1.5">RAM (%)</label>
+            <input id="edit-srv-mem" name="memory_percent" type="number" step="0.1" min="0" max="100"
+                   class="w-full bg-[#0D1117] border border-[#30363D] rounded-lg px-3 py-2.5 text-[#E6EDF3] text-sm focus:outline-none focus:border-[#388BFD] transition-colors">
+          </div>
+          <div>
+            <label class="block text-[11px] font-semibold text-[#8B949E] uppercase tracking-wider mb-1.5">Disque (%)</label>
+            <input id="edit-srv-disk" name="disk_percent" type="number" step="0.1" min="0" max="100"
+                   class="w-full bg-[#0D1117] border border-[#30363D] rounded-lg px-3 py-2.5 text-[#E6EDF3] text-sm focus:outline-none focus:border-[#388BFD] transition-colors">
+          </div>
+        </div>
+        <div class="col-span-2">
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input id="edit-srv-active" name="is_active" type="checkbox" value="true"
+                   class="w-4 h-4 rounded border-[#30363D] bg-[#0D1117] text-[#388BFD] focus:ring-[#388BFD] focus:ring-offset-0">
+            <span class="text-sm text-[#8B949E]">Actif</span>
+          </label>
+        </div>
+      </div>
+      <div class="flex items-center gap-3 pt-2 border-t border-[#30363D]">
+        <button type="submit"
+                class="flex-1 py-2.5 bg-[#388BFD] hover:bg-[#1F6FEB] text-white text-sm font-semibold rounded-lg transition-colors">
+          Enregistrer
+        </button>
+        <button type="button" onclick="closeModal('modal-edit-server')"
+                class="flex-1 py-2.5 border border-[#30363D] text-[#8B949E] text-sm rounded-lg hover:border-[#484F58] transition-colors">
+          Annuler
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{# ── Modal Supprimer ──────────────────────────────────────────────── #}
+<div id="modal-delete-server" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+  <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeModal('modal-delete-server')"></div>
+  <div class="relative bg-[#161B22] border border-red-900/50 rounded-2xl shadow-2xl w-full max-w-md">
+    <div class="p-6 text-center">
+      <div class="w-12 h-12 rounded-full bg-red-950 flex items-center justify-center mx-auto mb-4">
+        <svg class="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+        </svg>
+      </div>
+      <h3 class="text-base font-semibold text-[#E6EDF3] mb-2">Supprimer le serveur</h3>
+      <p class="text-sm text-[#8B949E] mb-1">Vous êtes sur le point de supprimer :</p>
+      <p id="delete-srv-name" class="text-sm font-semibold text-red-400 mb-4 font-mono"></p>
+      <p class="text-xs text-[#484F58] mb-6">Cette action est irréversible.</p>
+      <div class="flex items-center gap-3">
+        <form id="server-delete-form" method="post" action="" class="flex-1">
+          {% csrf_token %}
+          <button type="submit"
+                  class="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-lg transition-colors">
+            Supprimer
+          </button>
+        </form>
+        <button onclick="closeModal('modal-delete-server')"
+                class="flex-1 py-2.5 border border-[#30363D] text-[#8B949E] text-sm rounded-lg hover:border-[#484F58] transition-colors">
+          Annuler
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# ── Modal SSH Collect ────────────────────────────────────────────── #}
+<div id="modal-ssh-collect" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+  <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeModal('modal-ssh-collect')"></div>
+  <div class="relative bg-[#161B22] border border-[#30363D] rounded-2xl shadow-2xl w-full max-w-md">
+    <div class="flex items-center justify-between p-6 border-b border-[#30363D]">
+      <div>
+        <h2 class="text-base font-semibold text-[#E6EDF3]">Collecter via SSH</h2>
+        <p id="ssh-modal-host" class="text-[11px] text-[#484F58] font-mono mt-0.5"></p>
+      </div>
+      <button onclick="closeModal('modal-ssh-collect')" class="text-[#484F58] hover:text-[#8B949E] transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <form id="ssh-collect-form" method="post" action="" class="p-6 space-y-4">
+      {% csrf_token %}
+      <div class="bg-[#0D1117] border border-emerald-900/40 rounded-lg p-3 text-xs text-[#8B949E]">
+        <p class="flex items-center gap-2 mb-1">
+          <svg class="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          Django se connecte en SSH au serveur distant et importe métriques + logs.
+        </p>
+        <p class="text-[10px] text-[#484F58] pl-5">Requiert : <code class="text-purple-400">pip install paramiko</code></p>
+      </div>
+      <div class="grid grid-cols-3 gap-3">
+        <div class="col-span-2">
+          <label class="block text-[11px] font-semibold text-[#8B949E] uppercase tracking-wider mb-1.5">Utilisateur SSH *</label>
+          <input name="ssh_user" type="text" placeholder="root" required autocomplete="off"
+                 class="w-full bg-[#0D1117] border border-[#30363D] rounded-lg px-3 py-2.5 text-[#E6EDF3] text-sm focus:outline-none focus:border-[#388BFD] focus:ring-1 focus:ring-[#388BFD] transition-colors font-mono">
+        </div>
+        <div>
+          <label class="block text-[11px] font-semibold text-[#8B949E] uppercase tracking-wider mb-1.5">Port SSH</label>
+          <input name="ssh_port" type="number" value="22" min="1" max="65535"
+                 class="w-full bg-[#0D1117] border border-[#30363D] rounded-lg px-3 py-2.5 text-[#E6EDF3] text-sm focus:outline-none focus:border-[#388BFD] transition-colors font-mono">
+        </div>
+      </div>
+      <div>
+        <label class="block text-[11px] font-semibold text-[#8B949E] uppercase tracking-wider mb-1.5">Mot de passe SSH</label>
+        <input name="ssh_password" type="password" placeholder="••••••••" autocomplete="new-password"
+               class="w-full bg-[#0D1117] border border-[#30363D] rounded-lg px-3 py-2.5 text-[#E6EDF3] text-sm focus:outline-none focus:border-[#388BFD] focus:ring-1 focus:ring-[#388BFD] transition-colors">
+        <p class="text-[10px] text-[#484F58] mt-1">Laisser vide pour utiliser la clé SSH de l'utilisateur courant (~/.ssh)</p>
+      </div>
+      <div>
+        <label class="block text-[11px] font-semibold text-[#8B949E] uppercase tracking-wider mb-1.5">Nombre de lignes de logs</label>
+        <input name="log_lines" type="number" value="100" min="10" max="1000"
+               class="w-full bg-[#0D1117] border border-[#30363D] rounded-lg px-3 py-2.5 text-[#E6EDF3] text-sm focus:outline-none focus:border-[#388BFD] transition-colors">
+      </div>
+      <div class="flex items-center gap-3 pt-2 border-t border-[#30363D]">
+        <button type="submit"
+                class="flex-1 flex items-center justify-center gap-2 py-2.5
+                       bg-emerald-700 hover:bg-emerald-600 text-white text-sm font-semibold rounded-lg transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+          </svg>
+          Collecter maintenant
+        </button>
+        <button type="button" onclick="closeModal('modal-ssh-collect')"
+                class="flex-1 py-2.5 border border-[#30363D] text-[#8B949E] text-sm rounded-lg hover:border-[#484F58] transition-colors">
+          Annuler
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endif %}{# /admin #}
+{% endblock %}
+
+{% block extra_head %}
+<script>
+function openModal(id) {
+  document.getElementById(id).classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+function closeModal(id) {
+  document.getElementById(id).classList.add('hidden');
+  document.body.style.overflow = '';
+}
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    ['modal-create-server','modal-edit-server','modal-delete-server','modal-ssh-collect'].forEach(closeModal);
+  }
+});
+
+// Délégation d'événements pour les boutons dans les cartes (résistent au swap HTMX)
+document.addEventListener('click', function(e) {
+  // Modifier
+  var editBtn = e.target.closest('.server-edit-btn');
+  if (editBtn) {
+    var d = editBtn.dataset;
+    document.getElementById('server-edit-form').action = d.editUrl;
+    document.getElementById('edit-srv-name').value     = d.name;
+    document.getElementById('edit-srv-ip').value       = d.ip;
+    document.getElementById('edit-srv-hostname').value = d.hostname;
+    document.getElementById('edit-srv-env').value      = d.environment;
+    document.getElementById('edit-srv-status').value   = d.status;
+    document.getElementById('edit-srv-desc').value     = d.description;
+    document.getElementById('edit-srv-cpu').value      = d.cpu || '';
+    document.getElementById('edit-srv-mem').value      = d.mem || '';
+    document.getElementById('edit-srv-disk').value     = d.disk || '';
+    document.getElementById('edit-srv-active').checked = (d.isActive === 'true');
+    openModal('modal-edit-server');
+  }
+
+  // Supprimer
+  var delBtn = e.target.closest('.server-delete-btn');
+  if (delBtn) {
+    document.getElementById('server-delete-form').action = delBtn.dataset.deleteUrl;
+    document.getElementById('delete-srv-name').textContent = delBtn.dataset.name;
+    openModal('modal-delete-server');
+  }
+
+  // SSH Collect
+  var sshBtn = e.target.closest('.server-ssh-btn');
+  if (sshBtn) {
+    document.getElementById('ssh-collect-form').action = sshBtn.dataset.sshUrl;
+    document.getElementById('ssh-modal-host').textContent =
+      sshBtn.dataset.name + (sshBtn.dataset.ip ? ' — ' + sshBtn.dataset.ip : '');
+    openModal('modal-ssh-collect');
+  }
+});
+</script>
 {% endblock %}

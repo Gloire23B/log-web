@@ -341,6 +341,11 @@ python manage.py collectstatic --noinput
 venv\Scripts\activate          # Windows
 source venv/bin/activate       # Linux/macOS
 
+# Dépendances Python
+
+```bash
+pip install -r requirements.txt
+
 # Appliquer les migrations
 python manage.py migrate
 

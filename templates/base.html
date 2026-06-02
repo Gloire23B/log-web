@@ -105,7 +105,8 @@
 
   {% block extra_head %}{% endblock %}
 </head>
-<body class="font-sans antialiased">
+<body class="font-sans antialiased"
+      hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
 
   {% block body %}
   <div class="flex h-screen overflow-hidden bg-[#0D1117]">
